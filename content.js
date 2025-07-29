@@ -38,7 +38,18 @@ function injectSummarizeButton() {
     targetElement.prepend(button);
 
     button.addEventListener("click", handleSummarizeClick);
+
+    // Inject custom CSS for styling the summary
+    injectCss('summary.css');
   }
+}
+
+function injectCss(file) {
+  const link = document.createElement('link');
+  link.href = chrome.runtime.getURL(file);
+  link.type = 'text/css';
+  link.rel = 'stylesheet';
+  (document.head || document.documentElement).appendChild(link);
 }
 
 // --- 2. Function to Handle the Button Click ---
@@ -53,6 +64,9 @@ async function handleSummarizeClick() {
 
   let finalTranscript = null;
 
+  handleResponse({summary: "Here's a concise summary of the video transcript in bullet points:\n\n*   **AI Space Overwhelm:** Developers are overwhelmed by the hype and noise surrounding AI agents, frameworks, and tools, making it difficult to discern what's truly important.\n\n*   **Focus on Foundational Building Blocks:** Instead of chasing the latest trends, developers should focus on understanding and mastering the core building blocks of AI agents, as custom solutions built on LLM APIs are more effective than relying solely on pre-built frameworks.\n\n*   **Seven Key Building Blocks:** The video outlines seven foundational building blocks for building AI agents:\n    1.  Intelligence Layer (LLM API calls)\n    2.  Memory (Conversation history)\n    3.  Tools (External system integration)\n    4.  Validation (Structured output, JSON schemas)\n    5.  Control (Deterministic decision-making with code)\n    6.  Recovery (Error handling and fallbacks)\n    7.  Feedback (Human-in-the-loop oversight)\n\n*   **Deterministic Code First:** Prioritize deterministic code and software engineering best practices whenever possible, using LLM calls sparingly for reasoning with context when code alone isn't sufficient.\n\n*   **Context Engineering is Key:** Effective AI agents require careful context engineering, meaning preprocessing information to provide LLMs with the right context at the right time for reliable results.\n\n*   **Workflow Orchestration:** AI agents are essentially workflows/DAGs where most steps should be deterministic code and not LLM calls.\n"});
+  return;
+
   try {
     // First, try the API method
     const apiTranscript = await getTranscript();
@@ -60,12 +74,12 @@ async function handleSummarizeClick() {
       finalTranscript = apiTranscript;
     } else {
       // If API method returns empty or null, force fallback
-      console.warn("API method returned empty transcript, trying DOM fallback.");
+      console.log("API method returned empty transcript, trying DOM fallback.");
       summaryContainer.innerHTML = '<i>API method returned empty. Trying fallback...</i>';
       finalTranscript = await getTranscriptFromDOM();
     }
   } catch (error) {
-    console.warn("API method failed, trying DOM fallback:", error.message);
+    console.log("API method failed, trying DOM fallback:", error.message);
     summaryContainer.innerHTML = '<i>API method failed. Trying fallback...</i>';
     
     // If API method fails, try the DOM fallback
@@ -92,12 +106,171 @@ function handleResponse(response) {
   if (chrome.runtime.lastError) {
     handleError(new Error(chrome.runtime.lastError.message));
   } else if (response && response.summary) {
-    summaryContainer.innerHTML = `<h3 style="margin-top:0;">Summary</h3><p>${response.summary.replace(/\n/g, '<br>')}</p>`;
+    const formattedSummary = parseMarkdown(response.summary);
+    summaryContainer.innerHTML = `<h3>Summary</h3><div class="markdown-content">${formattedSummary}</div>`;
+
+    // Add staggered animation to list items
+    const listItems = summaryContainer.querySelectorAll('.markdown-content li');
+    listItems.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.1}s`;
+        item.style.animation = 'slideUp 0.6s ease-out forwards';
+    });
   } else {
     handleError(new Error("Failed to get a valid summary."));
   }
   button.innerText = "✨ Summarize Video";
   button.disabled = false;
+}
+
+function parseMarkdown(text) {
+    if (!text) return '';
+    
+    // Split text into lines for processing
+    const lines = text.split('\n');
+    let result = [];
+    let inList = false;
+    let inOrderedList = false;
+    let currentIndent = 0;
+    let listStack = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+        
+        // Skip empty lines but preserve spacing
+        if (trimmedLine === '') {
+            if (inList || inOrderedList) {
+                // Don't add empty paragraphs inside lists
+                continue;
+            }
+            result.push('<br>');
+            continue;
+        }
+        
+        // Handle headers
+        if (trimmedLine.startsWith('### ')) {
+            closeAllLists();
+            result.push(`<h3>${trimmedLine.substring(4)}</h3>`);
+        } else if (trimmedLine.startsWith('## ')) {
+            closeAllLists();
+            result.push(`<h2>${trimmedLine.substring(3)}</h2>`);
+        } else if (trimmedLine.startsWith('# ')) {
+            closeAllLists();
+            result.push(`<h1>${trimmedLine.substring(2)}</h1>`);
+        }
+        // Handle bullet points
+        else if (trimmedLine.startsWith('*   ') || trimmedLine.startsWith('- ')) {
+            if (inOrderedList) {
+                closeOrderedList();
+            }
+            if (!inList) {
+                result.push('<ul>');
+                inList = true;
+            }
+            const content = trimmedLine.startsWith('*   ') ? 
+                           trimmedLine.substring(4) : 
+                           trimmedLine.substring(2);
+            result.push(`<li>${parseInlineMarkdown(content)}</li>`);
+        }
+        // Handle numbered lists (with proper indentation detection)
+        else if (trimmedLine.match(/^\s*\d+\.\s+/)) {
+            const indentMatch = line.match(/^(\s*)/);
+            const indent = indentMatch ? indentMatch[1].length : 0;
+            
+            if (indent > 0 && inList) {
+                // This is a nested numbered list within a bullet point
+                if (!inOrderedList) {
+                    // Remove the closing </li> from the previous bullet point
+                    const lastIndex = result.length - 1;
+                    if (result[lastIndex].endsWith('</li>')) {
+                        result[lastIndex] = result[lastIndex].replace('</li>', '');
+                    }
+                    result.push('<ol class="nested-list">');
+                    inOrderedList = true;
+                }
+                const content = trimmedLine.replace(/^\s*\d+\.\s+/, '');
+                result.push(`<li>${parseInlineMarkdown(content)}</li>`);
+            } else {
+                // Top-level numbered list
+                closeAllLists();
+                if (!inOrderedList) {
+                    result.push('<ol>');
+                    inOrderedList = true;
+                }
+                const content = trimmedLine.replace(/^\d+\.\s+/, '');
+                result.push(`<li>${parseInlineMarkdown(content)}</li>`);
+            }
+        }
+        // Handle blockquotes
+        else if (trimmedLine.startsWith('> ')) {
+            closeAllLists();
+            result.push(`<blockquote>${parseInlineMarkdown(trimmedLine.substring(2))}</blockquote>`);
+        }
+        // Handle regular paragraphs
+        else {
+            // Check if we need to close nested ordered list
+            if (inOrderedList && inList) {
+                result.push('</ol></li>');
+                inOrderedList = false;
+            } else if (inOrderedList && !inList) {
+                result.push('</ol>');
+                inOrderedList = false;
+            } else if (inList && !trimmedLine.startsWith('*') && !trimmedLine.startsWith('-')) {
+                result.push('</ul>');
+                inList = false;
+            }
+            
+            if (trimmedLine) {
+                result.push(`<p>${parseInlineMarkdown(trimmedLine)}</p>`);
+            }
+        }
+    }
+    
+    // Close any remaining open lists
+    closeAllLists();
+    
+    function closeAllLists() {
+        if (inOrderedList && inList) {
+            result.push('</ol></li>');
+            inOrderedList = false;
+        }
+        if (inOrderedList) {
+            result.push('</ol>');
+            inOrderedList = false;
+        }
+        if (inList) {
+            result.push('</ul>');
+            inList = false;
+        }
+    }
+    
+    function closeOrderedList() {
+        if (inOrderedList && inList) {
+            result.push('</ol></li>');
+        } else if (inOrderedList) {
+            result.push('</ol>');
+        }
+        inOrderedList = false;
+    }
+    
+    return result.join('\n');
+}
+
+// Function to parse inline markdown (bold, italic, code, etc.)
+function parseInlineMarkdown(text) {
+    // Bold text
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Italic text
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Code
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Links (basic)
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    
+    return text;
 }
 
 function handleError(error) {
