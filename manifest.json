@@ -29,5 +29,11 @@
       "matches": ["*://www.youtube.com/watch?v=*"],
       "js": ["content.js"]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injector.js"],
+      "matches": ["*://www.youtube.com/*"]
+    }
   ]
 }
