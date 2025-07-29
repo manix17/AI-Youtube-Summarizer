@@ -54,15 +54,52 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           return response.json();
       })
       .then(data => {
-        // Extract the summary text from the response
-        if (data.candidates && data.candidates.length > 0 && data.candidates[0].content.parts.length > 0) {
-          const summary = data.candidates[0].content.parts[0].text;
+        // Handle cases where no candidates are returned or content is blocked
+        if (!data.candidates || data.candidates.length === 0) {
+          if (data.promptFeedback && data.promptFeedback.blockReason) {
+            let blockReasonMessage = "";
+            switch (data.promptFeedback.blockReason) {
+              case "SAFETY":
+                blockReasonMessage = "The prompt was blocked due to safety concerns.";
+                break;
+              case "OTHER":
+                blockReasonMessage = "The prompt was blocked for an unknown reason.";
+                break;
+              default:
+                blockReasonMessage = `The prompt was blocked: ${data.promptFeedback.blockReason}.`;
+            }
+            throw new Error(`API blocked the prompt. ${blockReasonMessage}`);
+          } else {
+            throw new Error("API did not return any summary candidates.");
+          }
+        }
+
+        const candidate = data.candidates[0];
+
+        // Check finish reason for the candidate
+        if (candidate.finishReason) {
+          switch (candidate.finishReason) {
+            case "STOP":
+              // Normal completion, proceed to extract text
+              break;
+            case "SAFETY":
+              throw new Error("Summary generation stopped due to safety concerns.");
+            case "MAX_TOKENS":
+              throw new Error("Summary too long, consider shortening the transcript or adjusting prompt.");
+            case "RECITATION":
+              throw new Error("Summary generation stopped due to potential recitation of copyrighted material.");
+            case "OTHER":
+              throw new Error("Summary generation stopped for an unknown reason.");
+            default:
+              throw new Error(`Summary generation stopped with reason: ${candidate.finishReason}.`);
+          }
+        }
+
+        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+          const summary = candidate.content.parts[0].text;
           sendResponse({ summary: summary });
         } else {
-           if (data.promptFeedback && data.promptFeedback.blockReason) {
-              throw new Error(`API blocked the prompt. Reason: ${data.promptFeedback.blockReason}.`);
-           }
-          throw new Error("Invalid response structure from API.");
+          throw new Error("Invalid response structure from API: Missing content in candidate.");
         }
       })
       .catch(error => {
