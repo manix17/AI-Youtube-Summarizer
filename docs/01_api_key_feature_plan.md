@@ -31,6 +31,10 @@ This document outlines the plan to add a feature allowing users to provide their
   - In the `chrome.runtime.onMessage` listener, before making the `fetch` call, retrieve the API key from `chrome.storage.sync`.
 - **Error Handling**:
   - If the API key is not found in storage, send a response to the content script with an error message prompting the user to set the key in the options page.
+  - Enhanced handling of Gemini API responses, including:
+    - Checking for `promptFeedback.blockReason` (e.g., SAFETY, OTHER) to inform the user about content moderation blocks.
+    - Checking `candidate.finishReason` (e.g., STOP, SAFETY, MAX_TOKENS, RECITATION, OTHER) for more specific error messages related to summary generation completion status.
+    - Providing clear error messages for invalid API keys or unexpected API response structures.
 - **Remove Hardcoded Key**:
   - Delete the hardcoded `apiKey` variable.
 
