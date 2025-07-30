@@ -311,7 +311,8 @@ function linkifyTimestamps(text) {
       seconds = parts[0] * 60 + parts[1];
     }
 
-    match = match.replace(/[\[\]()]/g, '');
+    match = match.replace(/[(]/g, '[');
+    match = match.replace(/[)]/g, ']');
 
     return `<a href="javascript:void(0)" data-seconds="${seconds}" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">${match}</a>`;
   });
