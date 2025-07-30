@@ -75,7 +75,9 @@ async function handleSummarizeClick() {
 
   let finalTranscript = null;
 
-  // handleResponse({summary: "Here is a comprehensive summary of the YouTube video transcript.\n\n### **Overview**\n\nThis video demystifies the chaotic AI agent space by teaching developers to ignore the hype and instead focus on seven foundational building blocks, arguing that the most reliable and effective AI agents are built with deterministic software and strategic, minimal LLM calls.\n\n### **Key Points**\n\n*   **Thesis: Build with First Principles, Not Frameworks (5:05)**\n    *   The current AI landscape is filled with noise and hype, leading to developer confusion. The speaker advises ignoring 99% of this, including many high-level agentic frameworks (**LangChain, Llama Index**), which are often abstractions built on \"quicksand.\" (4:21)\n    *   The most effective AI agents are not fully \"agentic\" but are **deterministic software** with LLM calls used sparingly and strategically only for tasks that require reasoning with context. (5:11)\n    *   An **LLM API call** is described as the \"most expensive and dangerous operation in software engineering\" today and should be avoided unless absolutely necessary, especially in **background automation systems**. (6:01, 6:48)\n\n*   **The 7 Foundational Building Blocks for AI Agents (7:56)**\n    1.  **Intelligence Layer (8:09):** This is the core LLM API call (e.g., to OpenAI). It's the only truly \"AI\" component, turning regular software into an AI application.\n    2.  **Memory (9:09):** This block handles context persistence. Since LLMs are **stateless**, you must manually pass the conversation history with each new request to maintain a coherent dialogue. This is fundamental state management, similar to web apps.\n    3.  **Tools (10:58):** This allows the LLM to interact with external systems like APIs or databases. The LLM suggests a function to call (e.g., `get_weather`), and your code is responsible for executing it and returning the result to the LLM.\n    4.  **Validation (13:14):** This is a critical step for quality assurance. It involves forcing the LLM to return data in a predefined **structured output** (JSON schema). This is crucial for building reliable, predictable systems.\n        *   **Tool Mentioned:** **Pydantic** is used in the Python example to define and validate the expected data structure. (15:03)\n    5.  **Control (16:55):** This block uses deterministic code (like `if/else` statements) to manage workflow and routing. Instead of letting an LLM decide which tool to use, a more robust pattern is to have the LLM classify the user's intent and then use simple code to route the request to the correct function.\n        *   **Counterintuitive Insight:** This classification-then-routing approach is often more reliable and easier to debug for production systems than relying on native tool-calling. (19:56)\n    6.  **Recovery (21:25):** This is standard software engineering error handling. It involves implementing `try/catch` blocks, retry logic with exponential backoff, and fallback responses to gracefully handle API failures, rate limits, or invalid LLM outputs.\n    7.  **Feedback (23:22):** This incorporates a **human-in-the-loop** for critical or sensitive tasks. It creates a full stop in the workflow, requiring human approval (e.g., via a Slack notification or UI button) before an action is executed, ensuring safety and quality.\n\n### **Actionable Takeaways**\n\n*   **Adopt a Software Engineering Mindset:** Break large problems into smaller sub-problems. Solve as much as possible with regular, deterministic code before considering an LLM call. (5:52)\n*   **Prioritize Structured Output:** Whenever you need data from an LLM, force it into a validated JSON schema using tools like **Pydantic**. This makes the output predictable and allows you to build reliable application logic around it. (13:55)\n*   **Favor Classification and Routing Over Tool-Calling:** For complex workflows, use the LLM to classify intent into predefined categories. Then, use simple `if/else` logic in your code to call the appropriate functions. This gives you more control and makes debugging easier than letting the LLM choose from a list of tools. (20:04)\n*   **Differentiate Between Assistants and Automation:** The design patterns for a **personal assistant** (where a user is in the loop) are different from a **fully automated background system**. The latter requires much stricter controls, fewer LLM calls, and more robust validation and recovery mechanisms. (6:18)\n\n### **Notable Mentions**\n\n*   **Tools & Libraries:** OpenAI Python SDK (8:44), Pydantic (15:03)\n*   **Concepts:** Function Calling (4:28), Structured Output (13:55), DAGs (Directed Acyclic Graphs) (7:32)\n*   **People:** Jason Liu (2:18), Dan Martell (2:20)\n*   **Resources:** The speaker recommends his own free YouTube course, **\"Building AI Agents in Pure Python,\"** and its accompanying **GitHub repository** as a practical follow-up for orchestrating these building blocks into complete workflows. (13:00, 27:27)"});
+  // const response = await fetch('platform_configs.json');
+  // summaries = await response.json();
+  // handleResponse(summaries[0]);
   // return;
 
   try {
@@ -86,10 +88,10 @@ async function handleSummarizeClick() {
     } else {
       // If API method returns empty or null, force fallback
       console.log("API method returned empty transcript, trying DOM fallback.");
-      const summaryContent = document.getElementById("summary-content");
-      if (summaryContent) {
-        summaryContent.innerHTML = '<i>API method returned empty. Trying fallback...</i>';
-      }
+      // const summaryContent = document.getElementById("summary-content");
+      // if (summaryContent) {
+      //   summaryContent.innerHTML = '<i>API method returned empty. Trying fallback...</i>';
+      // }
       finalTranscript = await getTranscriptFromDOM();
     }
   } catch (error) {
@@ -109,8 +111,19 @@ async function handleSummarizeClick() {
   }
 
   if (finalTranscript && finalTranscript.trim() !== '') {
-    // Send the transcript to the background script
-    chrome.runtime.sendMessage({ action: "summarize", transcript: finalTranscript }, handleResponse);
+    // Gather metadata
+    const videoTitle = document.querySelector('h1.style-scope.ytd-watch-metadata')?.innerText || 'N/A';
+    const channelName = document.querySelector('ytd-channel-name #text a')?.innerText || document.querySelector('#owner-name a.yt-simple-endpoint')?.innerText || 'N/A';
+    const videoDuration = document.querySelector('.ytp-time-duration')?.innerText || 'N/A';
+
+    // Send the transcript and metadata to the background script
+    chrome.runtime.sendMessage({ 
+        action: "summarize", 
+        transcript: finalTranscript,
+        videoTitle: videoTitle,
+        videoDuration: videoDuration,
+        channelName: channelName
+    }, handleResponse);
   } else {
     handleError(new Error("Could not retrieve a valid transcript using either method."));
   }

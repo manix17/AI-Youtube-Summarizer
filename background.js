@@ -163,7 +163,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             const { platform, model, apiKey, systemPrompt, userPrompt } = profile;
-            const finalUserPrompt = userPrompt.replace('{transcript}', request.transcript);
+            let finalUserPrompt = userPrompt
+                .replace('{transcript}', request.transcript)
+                .replace('{video_title}', request.videoTitle)
+                .replace('{video_duration}', request.videoDuration)
+                .replace('{channel_name}', request.channelName);
             
             const apiConfig = getApiConfig(platform, model);
             let apiUrl = apiConfig.url;
