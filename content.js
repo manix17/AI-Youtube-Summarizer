@@ -297,35 +297,48 @@ function handleError(error) {
 
 async function getTranscriptFromDOM() {
   return new Promise(async (resolve, reject) => {
-    const moreActionsButton = document.querySelector('tp-yt-paper-button#expand');
-    if (moreActionsButton) {
-      moreActionsButton.click();
-    } else {
-      console.warn("'More actions' button not found, proceeding to look for transcript button directly.");
-    }
+    try {
+      // Click "more" to show description
+      const moreActionsButton = document.querySelector('tp-yt-paper-button#expand');
+      if (moreActionsButton) {
+        moreActionsButton.click();
+        await new Promise(r => setTimeout(r, 500)); // Wait for animation
+      }
 
-    // Give some time for the description to expand and the transcript button to appear
-    await new Promise(r => setTimeout(r, 1000)); 
+      // Find and click "Show transcript" button
+      const transcriptButton = document.querySelector('ytd-video-description-transcript-section-renderer button[aria-label="Show transcript"]');
+      if (transcriptButton) {
+        transcriptButton.click();
+        await new Promise(r => setTimeout(r, 1500)); // Wait for transcript to load
+      }
 
-    // Now, look for the 'Show transcript' button within the expanded description
-    const transcriptButton = document.querySelector('ytd-video-description-transcript-section-renderer button[aria-label="Show transcript"]');
+      // At this point, the transcript should be visible.
+      // Poll for transcript segments to appear.
+      let transcriptSegments = [];
+      let retries = 5;
+      while (retries > 0 && transcriptSegments.length === 0) {
+        transcriptSegments = document.querySelectorAll("ytd-transcript-segment-renderer");
+        if (transcriptSegments.length > 0) break;
+        await new Promise(r => setTimeout(r, 500));
+        retries--;
+      }
 
-    if (transcriptButton) {
-      transcriptButton.click();
-      setTimeout(() => {
-        const transcriptSegments = document.querySelectorAll("ytd-transcript-segment-renderer .segment-text");
-        if (transcriptSegments.length > 0) {
-          let fullTranscript = "";
-          transcriptSegments.forEach(segment => {
-            fullTranscript += segment.innerText + " ";
-          });
-          resolve(fullTranscript.trim());
-        } else {
-          reject(new Error("Transcript panel opened, but no segments found."));
-        }
-      }, 2000); // Wait for segments to load
-    } else {
-      reject(new Error("Could not find the 'Show transcript' button in the menu."));
+      if (transcriptSegments.length > 0) {
+        let fullTranscript = "";
+        transcriptSegments.forEach(segment => {
+          const timestamp = segment.querySelector('.segment-timestamp')?.innerText.trim() || '';
+          const text = segment.querySelector('.segment-text')?.innerText.trim() || '';
+          if (text) {
+            fullTranscript += `[${timestamp}] ${text}\n`;
+          }
+        });
+        resolve(fullTranscript.trim());
+      } else {
+        reject(new Error("Could not find transcript segments. The video may not have a transcript, or the page structure has changed."));
+      }
+    } catch (error) {
+      console.error("Error in getTranscriptFromDOM:", error);
+      reject(new Error("An unexpected error occurred while trying to get the transcript from the page."));
     }
   });
 }
@@ -349,14 +362,22 @@ async function getTranscript() {
         }
         const xmlText = await response.text();
 
-        // Basic XML parsing without a full library
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
         const textNodes = xmlDoc.getElementsByTagName('text');
 
         let fullTranscript = "";
         for (let i = 0; i < textNodes.length; i++) {
-            fullTranscript += textNodes[i].textContent + " ";
+            const node = textNodes[i];
+            const start = parseFloat(node.getAttribute('start'));
+            const text = node.textContent;
+
+            // Format timestamp from seconds to MM:SS
+            const minutes = Math.floor(start / 60);
+            const seconds = Math.floor(start % 60).toString().padStart(2, '0');
+            const timestamp = `${minutes}:${seconds}`;
+
+            fullTranscript += `[${timestamp}] ${text.replace(/&#39;/g, "'").replace(/\n/g, ' ').trim()}\n`;
         }
 
         return fullTranscript.trim();
