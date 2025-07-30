@@ -5,10 +5,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   devtool: 'cheap-module-source-map', // Or 'source-map' for production
   entry: {
-    background: path.resolve(__dirname, 'src/background/index.js'),
-    content: path.resolve(__dirname, 'src/content/index.js'),
-    popup: path.resolve(__dirname, 'src/popup/index.js'),
-    options: path.resolve(__dirname, 'src/options/index.js'),
+    background: path.resolve(__dirname, 'src/background/index.ts'),
+    content: path.resolve(__dirname, 'src/content/index.ts'),
+    injector: path.resolve(__dirname, 'src/content/injector.ts'),
+    popup: path.resolve(__dirname, 'src/popup/index.ts'),
+    options: path.resolve(__dirname, 'src/options/index.ts'),
   },
   output: {
     path: path.resolve(__dirname, 'build'),
@@ -17,6 +18,11 @@ module.exports = {
   },
   module: {
     rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
       {
         test: /\.js$/,
         exclude: /node_modules/,
@@ -32,6 +38,17 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
     ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    alias: {
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@background': path.resolve(__dirname, 'src/background'),
+      '@content': path.resolve(__dirname, 'src/content'),
+      '@popup': path.resolve(__dirname, 'src/popup'),
+      '@options': path.resolve(__dirname, 'src/options'),
+      '@assets': path.resolve(__dirname, 'src/assets'),
+    },
   },
   plugins: [
     // Copy static assets
