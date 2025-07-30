@@ -584,23 +584,24 @@
               </div>
 
               <div class="form-group">
-                <label for="model-select">Model</label>
-                <div class="model-selector">
-                  <select id="model-select">
-                  </select>
+                <label for="api-key">API Key</label>
+                <div class="api-key-input">
+                  <input
+                    type="password"
+                    id="api-key"
+                    placeholder="Enter your API key"
+                  />
+                  <button class="test-key-btn" id="test-key-btn">Test</button>
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="api-key">API Key</label>
-              <div class="api-key-input">
-                <input
-                  type="password"
-                  id="api-key"
-                  placeholder="Enter your API key"
-                />
-                <button class="test-key-btn" id="test-key-btn">Test</button>
+              <label for="model-select">Model</label>
+              <div class="model-selector">
+                <select id="model-select" disabled>
+                  <option value="">-- Test API Key to load models --</option>
+                </select>
               </div>
             </div>
           </div>

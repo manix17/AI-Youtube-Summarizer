@@ -6,11 +6,15 @@ export async function testOpenApiKey(apiKey) {
         const response = await fetch('https://api.openai.com/v1/models', {
             headers: { 'Authorization': `Bearer ${apiKey}` }
         });
+        const data = await response.json();
         if (response.ok) {
-            return { success: true };
+            const models = data.data.map(model => ({
+                name: model.id,
+                displayName: model.id
+            }));
+            return { models: models };
         } else {
-            const errorData = await response.json();
-            return { success: false, error: errorData.error?.message || `HTTP Error: ${response.status}` };
+            return { success: false, error: data.error?.message || `HTTP Error: ${response.status}` };
         }
     } catch (error) {
         return { success: false, error: 'Network error or invalid response.' };
@@ -55,11 +59,11 @@ export async function testGeminiApiKey(apiKey) {
     }
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await response.json();
         if (response.ok) {
-            return { success: true };
+            return data; // Returns { models: [...] }
         } else {
-            const errorData = await response.json();
-            return { success: false, error: errorData.error?.message || `HTTP Error: ${response.status}` };
+            return { success: false, error: data.error?.message || `HTTP Error: ${response.status}` };
         }
     } catch (error) {
         return { success: false, error: 'Network error or invalid response.' };
