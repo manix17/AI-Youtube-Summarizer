@@ -12,27 +12,25 @@ function injectSummarizeButton() {
     button.id = "summarize-btn";
     
     // Simple styling to make the button stand out
-    Object.assign(button.style, {
-        backgroundColor: '#007bff',
-        color: 'white',
-        padding: '10px 20px',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        margin: '10px 0'
-    });
+    button.classList.add('summarize-btn');
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
-    Object.assign(summaryContainer.style, {
-        backgroundColor: '#f0f0f0',
-        padding: '15px',
-        borderRadius: '8px',
-        marginTop: '10px',
-        display: 'none', // Initially hidden
-        border: '1px solid #ddd'
+    summaryContainer.classList.add('summary-container');
+    summaryContainer.style.display = 'none'; // Initially hidden
+
+    const closeButton = document.createElement("button");
+    closeButton.id = "close-summary-btn";
+    closeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="m12.71 12 8.15 8.15-.71.71L12 12.71l-8.15 8.15-.71-.71L11.29 12 3.15 3.85l.71-.71L12 11.29l8.15-8.15.71.71L12.71 12z"></path></svg>';
+    closeButton.classList.add('close-summary-btn');
+    closeButton.addEventListener('click', () => {
+        summaryContainer.style.display = 'none';
     });
+    summaryContainer.appendChild(closeButton);
+
+    const summaryContent = document.createElement("div");
+    summaryContent.id = "summary-content";
+    summaryContainer.appendChild(summaryContent);
 
     targetElement.prepend(summaryContainer);
     targetElement.prepend(button);
@@ -60,7 +58,10 @@ async function handleSummarizeClick() {
   button.innerText = "⏳ Summarizing...";
   button.disabled = true;
   summaryContainer.style.display = 'block';
-  summaryContainer.innerHTML = '<i>Getting transcript...</i>';
+  const summaryContent = document.getElementById("summary-content");
+  if (summaryContent) {
+    summaryContent.innerHTML = '<i>Getting transcript...</i>';
+  }
 
   let finalTranscript = null;
 
@@ -75,12 +76,18 @@ async function handleSummarizeClick() {
     } else {
       // If API method returns empty or null, force fallback
       console.log("API method returned empty transcript, trying DOM fallback.");
-      summaryContainer.innerHTML = '<i>API method returned empty. Trying fallback...</i>';
+      const summaryContent = document.getElementById("summary-content");
+      if (summaryContent) {
+        summaryContent.innerHTML = '<i>API method returned empty. Trying fallback...</i>';
+      }
       finalTranscript = await getTranscriptFromDOM();
     }
   } catch (error) {
     console.log("API method failed, trying DOM fallback:", error.message);
-    summaryContainer.innerHTML = '<i>API method failed. Trying fallback...</i>';
+    const summaryContent = document.getElementById("summary-content");
+    if (summaryContent) {
+      summaryContent.innerHTML = '<i>API method failed. Trying fallback...</i>';
+    }
     
     // If API method fails, try the DOM fallback
     try {
@@ -107,7 +114,8 @@ function handleResponse(response) {
     handleError(new Error(chrome.runtime.lastError.message));
   } else if (response && response.summary) {
     const formattedSummary = parseMarkdown(response.summary);
-    summaryContainer.innerHTML = `<h3>Summary</h3><div class="markdown-content">${formattedSummary}</div>`;
+    const summaryContent = document.getElementById("summary-content");
+    summaryContent.innerHTML = `<h3>Summary</h3><div class="markdown-content">${formattedSummary}</div>`;
 
     // Add staggered animation to list items
     const listItems = summaryContainer.querySelectorAll('.markdown-content li');
@@ -275,7 +283,13 @@ function parseInlineMarkdown(text) {
 
 function handleError(error) {
   const summaryContainer = document.getElementById("summary-container");
-  summaryContainer.innerHTML = `<p style="color: red;"><b>Error:</b> ${error.message}</p>`;
+  const summaryContent = document.getElementById("summary-content");
+  if (summaryContent) {
+    summaryContent.innerHTML = `<p style="color: red;"><b>Error:</b> ${error.message}</p>`;
+  } else {
+    // Fallback if summaryContent is not found (shouldn't happen if injected correctly)
+    summaryContainer.innerHTML = `<p style="color: red;"><b>Error:</b> ${error.message}</p>`;
+  }
   const button = document.getElementById("summarize-btn");
   button.innerText = "✨ Summarize Video";
   button.disabled = false;

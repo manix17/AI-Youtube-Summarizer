@@ -15,3 +15,6 @@ Thumbs.db
 # Ignore editor-specific files
 .vscode/
 .idea/
+
+# Ignore Environment files
+.env
