@@ -8,11 +8,12 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --mode=production --config webpack.config.js",
+    "watch": "webpack --mode=development --watch --config webpack.config.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "",
   "devDependencies": {
     "@babel/core": "^7.28.0",

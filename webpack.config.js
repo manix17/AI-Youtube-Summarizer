@@ -3,7 +3,6 @@ const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: 'development', // Use 'production' for releases
   devtool: 'cheap-module-source-map', // Or 'source-map' for production
   entry: {
     background: path.resolve(__dirname, 'src/background/index.js'),
