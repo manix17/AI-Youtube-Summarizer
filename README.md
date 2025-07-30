@@ -53,16 +53,25 @@ You can install AI YouTube Summarizer in two ways:
 2.  Click the "Add to Chrome" button.
 3.  Confirm the installation, and you're all set! The **AI YouTube Summarizer** icon will appear in your browser's toolbar.
 
-### 2. Developer Mode (for local development or testing)
+### 2. From Source (for local development)
 
-1.  **Download the code:** Clone or download this repository to your local machine.
+1.  **Clone the repository:**
     ```bash
     git clone [YOUR_REPOSITORY_URL]
+    cd yt-summarize
     ```
-2.  **Open Chrome Extensions:** Open Google Chrome and navigate to `chrome://extensions`.
-3.  **Enable Developer Mode:** Turn on the "Developer mode" toggle, usually found in the top-right corner.
-4.  **Load the extension:** Click the "Load unpacked" button and select the `yt-summarize` directory where you cloned the repository.
-5.  The extension will now be installed locally.
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Build the extension:**
+    ```bash
+    npm run build
+    ```
+4.  **Load the extension in Chrome:**
+    *   Open Google Chrome and navigate to `chrome://extensions`.
+    *   Enable "Developer mode" (toggle in the top-right).
+    *   Click "Load unpacked" and select the `build` directory from this project.
 
 ---
 
@@ -111,20 +120,23 @@ We value your privacy and only request the permissions necessary for the extensi
 ## Technical Details ⚙️
 
 *   **Compatible Chrome Versions:** Chrome 102 and above (Manifest V3 requirement).
-*   **System Requirements:** No special requirements.
+*   **System Requirements:** Node.js and npm for development.
 *   **File Structure Overview:**
     ```
-    /
-    ├── manifest.json       # Core file that defines the extension's properties
-    ├── background.js       # Service worker for handling API calls and events
-    ├── content.js          # Script to interact with YouTube pages
-    ├── injector.js         # Helper to inject summary content
-    ├── popup.html          # The main popup's UI
-    ├── popup.js            # Logic for the popup
-    ├── options.html        # The options page UI
-    ├── options.js          # Logic for the options page
-    ├── summary.css         # Styles for the injected summary
-    └── images/             # Icons and other image assets
+    yt-summarize/
+    ├── build/              # The compiled, production-ready extension
+    ├── src/                # Source code
+    │   ├── background/
+    │   ├── content/
+    │   ├── options/
+    │   ├── popup/
+    │   ├── utils/
+    │   └── assets/
+    ├── tests/              # Unit and integration tests
+    ├── docs/               # Documentation files
+    ├── manifest.json
+    ├── webpack.config.js
+    └── package.json
     ```
 
 ---
@@ -133,22 +145,20 @@ We value your privacy and only request the permissions necessary for the extensi
 
 We welcome contributions from the community!
 
-### Local Development Setup
-1.  Follow the [Developer Mode installation](#2-developer-mode-for-local-development-or-testing) steps above.
-2.  Make your changes to the code.
-3.  Go to `chrome://extensions` and click the "Reload" button for the extension to see your changes.
+### Development Setup
+This project uses **Webpack** to bundle the extension. For detailed instructions on setting up a local development environment, running tests, and contributing, please see our **[CONTRIBUTING.md](CONTRIBUTING.md)** file.
 
-### Build Instructions
-This project does not require a separate build step. All files are plain JavaScript, HTML, and CSS.
-
-### Contributing
-<!-- Consider creating a CONTRIBUTING.md file for guidelines. -->
-Please feel free to open an issue or submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
+The basic workflow is:
+1.  Clone the repo and run `npm install`.
+2.  Make changes to the code in the `src/` directory.
+3.  Run `npm run build` to compile the extension into the `build/` directory.
+4.  Load the `build/` directory as an unpacked extension in Chrome.
 
 ### Technology Stack
 *   Vanilla JavaScript (ES6 Modules)
-*   HTML5
-*   CSS3
+*   HTML5 / CSS3
+*   Webpack for bundling
+*   Jest for testing
 
 ---
 

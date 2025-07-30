@@ -13,7 +13,7 @@
     "https://generativelanguage.googleapis.com/"
   ],
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "background.bundle.js",
     "type": "module"
   },
   "action": {
@@ -21,19 +21,19 @@
     "default_popup": "popup.html"
   },
   "icons": {
-    "16": "images/icon16.png",
-    "48": "images/icon48.png",
-    "128": "images/icon128.png"
+    "16": "assets/images/icon16.png",
+    "48": "assets/images/icon48.png",
+    "128": "assets/images/icon128.png"
   },
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/watch?v=*"],
-      "js": ["content.js"]
+      "js": ["content.bundle.js"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injector.js", "summary.css", "md_rendering_test.json"],
+      "resources": ["assets/injector.js", "assets/css/summary.css", "assets/md_rendering_test.json"],
       "matches": ["*://www.youtube.com/*"]
     }
   ]

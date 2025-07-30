@@ -1,8 +1,11 @@
-// background.js
-import * as apiTester from './api_tester.js';
+// src/utils/api.js
 
-// --- Helper Functions for API Calls ---
-
+/**
+ * Returns the API configuration for a given platform.
+ * @param {string} platform - The AI platform (e.g., 'openai', 'gemini').
+ * @param {string} model - The specific model name.
+ * @returns {object} The configuration object for the platform.
+ */
 function getApiConfig(platform, model) {
     const configs = {
         openai: {
@@ -18,6 +21,14 @@ function getApiConfig(platform, model) {
     return configs[platform];
 }
 
+/**
+ * Builds the request payload for the specified AI platform.
+ * @param {string} platform - The AI platform.
+ * @param {string} model - The AI model.
+ * @param {string} systemPrompt - The system prompt.
+ * @param {string} userPrompt - The user prompt.
+ * @returns {object} The request payload.
+ */
 function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
     switch (platform) {
         case 'openai':
@@ -49,6 +60,12 @@ function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
     }
 }
 
+/**
+ * Builds the request headers for the specified AI platform.
+ * @param {string} platform - The AI platform.
+ * @param {string} apiKey - The user's API key.
+ * @returns {object} The request headers.
+ */
 function buildRequestHeaders(platform, apiKey) {
     const headers = { 'Content-Type': 'application/json' };
     switch (platform) {
@@ -66,6 +83,12 @@ function buildRequestHeaders(platform, apiKey) {
     return headers;
 }
 
+/**
+ * Extracts the summary from the API response.
+ * @param {string} platform - The AI platform.
+ * @param {object} data - The response data from the API.
+ * @returns {string} The summary text.
+ */
 function extractSummaryFromResponse(platform, data) {
     try {
         switch (platform) {
@@ -90,6 +113,13 @@ function extractSummaryFromResponse(platform, data) {
     }
 }
 
+/**
+ * Handles API errors and returns a user-friendly message.
+ * @param {string} platform - The AI platform.
+ * @param {object} errorData - The error data from the API response.
+ * @param {number} status - The HTTP status code.
+ * @returns {string} A formatted error message.
+ */
 function handleApiError(platform, errorData, status) {
     let message = `API Error (${status}): `;
     try {
@@ -118,90 +148,51 @@ function handleApiError(platform, errorData, status) {
     return message;
 }
 
+/**
+ * The main summarization function that orchestrates the API call.
+ * @param {object} profile - The user's current profile settings.
+ * @param {string} transcript - The video transcript.
+ * @param {string} videoTitle - The title of the video.
+ * @param {string} videoDuration - The duration of the video.
+ * @param {string} channelName - The name of the channel.
+ * @returns {Promise<string>} A promise that resolves with the summary.
+ */
+export async function generateSummary(profile, transcript, videoTitle, videoDuration, channelName) {
+    const { platform, model, apiKey, systemPrompt, userPrompt } = profile;
+    
+    let finalUserPrompt = userPrompt
+        .replace('{transcript}', transcript)
+        .replace('{video_title}', videoTitle)
+        .replace('{video_duration}', videoDuration)
+        .replace('{channel_name}', channelName);
 
-// --- Main Event Listener ---
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "testApiKey") {
-        const { platform, apiKey } = request;
-        let testPromise;
-
-        if (platform === 'openai') {
-            testPromise = apiTester.testOpenApiKey(apiKey);
-        } else if (platform === 'anthropic') {
-            testPromise = apiTester.testAnthropicApiKey(apiKey);
-        } else if (platform === 'gemini') {
-            testPromise = apiTester.testGeminiApiKey(apiKey);
-        } else {
-            sendResponse({ success: false, error: 'Invalid platform' });
-            return false; // No async response
-        }
-
-        testPromise.then(result => {
-            sendResponse(result);
-        });
-
-        return true; // Indicates that the response is sent asynchronously
+    const apiConfig = getApiConfig(platform, model);
+    let apiUrl = apiConfig.url;
+    if (platform === 'gemini') {
+        apiUrl += `?key=${apiKey}`;
     }
 
-    if (request.action === "summarize") {
-        if (!request.transcript || request.transcript.trim() === "") {
-            sendResponse({ summary: "Error: Could not find a transcript for this video." });
-            return true;
-        }
+    const payload = buildRequestPayload(platform, model, systemPrompt, finalUserPrompt);
+    const headers = buildRequestHeaders(platform, apiKey);
 
-        chrome.storage.sync.get(['profiles', 'currentProfile'], (result) => {
-            if (!result.profiles || !result.currentProfile) {
-                sendResponse({ summary: "Error: No profiles found. Please configure the extension options." });
-                return;
-            }
-
-            const profile = result.profiles[result.currentProfile];
-            if (!profile || !profile.apiKey) {
-                sendResponse({ summary: `Error: API key for ${profile.name} profile is missing.` });
-                return;
-            }
-
-            const { platform, model, apiKey, systemPrompt, userPrompt } = profile;
-            let finalUserPrompt = userPrompt
-                .replace('{transcript}', request.transcript)
-                .replace('{video_title}', request.videoTitle)
-                .replace('{video_duration}', request.videoDuration)
-                .replace('{channel_name}', request.channelName);
-            
-            const apiConfig = getApiConfig(platform, model);
-            let apiUrl = apiConfig.url;
-            if (platform === 'gemini') {
-                apiUrl += `?key=${apiKey}`;
-            }
-
-            const payload = buildRequestPayload(platform, model, systemPrompt, finalUserPrompt);
-            const headers = buildRequestHeaders(platform, apiKey);
-
-            fetch(apiUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(payload),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                        const errorMessage = handleApiError(platform, errorData, response.status);
-                        throw new Error(errorMessage);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                const summary = extractSummaryFromResponse(platform, data);
-                sendResponse({ summary: summary });
-            })
-            .catch(error => {
-                console.error("Error during summarization:", error);
-                sendResponse({ summary: `Error: Could not generate summary. ${error.message}` });
-            });
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload),
         });
 
-        return true; // Keep the message channel open for the asynchronous response
+        const data = await response.json();
+
+        if (!response.ok) {
+            const errorMessage = handleApiError(platform, data, response.status);
+            throw new Error(errorMessage);
+        }
+
+        return extractSummaryFromResponse(platform, data);
+    } catch (error) {
+        console.error("Error during summarization:", error);
+        // Re-throw the error to be caught by the caller
+        throw new Error(`Could not generate summary. ${error.message}`);
     }
-});
+}
