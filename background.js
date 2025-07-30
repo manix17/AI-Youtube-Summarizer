@@ -12,7 +12,7 @@ function getApiConfig(platform, model) {
             url: 'https://api.anthropic.com/v1/messages'
         },
         gemini: {
-            url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+            url: `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent`
         }
     };
     return configs[platform];

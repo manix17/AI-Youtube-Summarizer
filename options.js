@@ -99,8 +99,9 @@ Focus on creating value for someone who wants to understand the core content wit
 
         function setupEventListeners() {
             platformSelect.addEventListener('change', () => {
-                updateModelOptions();
                 updatePlatformBadge();
+                modelSelect.innerHTML = '<option value="">-- Test API Key to load models --</option>';
+                modelSelect.disabled = true;
             });
 
             addProfileBtn.addEventListener('click', () => {
@@ -133,17 +134,90 @@ Focus on creating value for someone who wants to understand the core content wit
             });
         }
 
-        function updateModelOptions() {
+        function populateModelDropdown(apiModels = []) { // apiModels is an array of model objects
             const platform = platformSelect.value;
             const config = platformConfigs[platform];
+            const configuredModelValues = config.models.map(x => x.value); // e.g., ["models/gemini-2.5-pro"]
             
+            const currentModel = profiles[currentProfile].model;
+
             modelSelect.innerHTML = '';
+            modelSelect.disabled = false;
+
+            const configuredGroup = document.createElement('optgroup');
+            configuredGroup.label = 'Configured Models';
+            
+            const otherGroup = document.createElement('optgroup');
+            otherGroup.label = 'Other Available Models';
+
+            const usedApiModels = new Set();
+
+            // Find intersection: API models that match a configured model
+            configuredModelValues.forEach(confValue => {
+                const apiModelMatch = apiModels.find(apiModel => apiModel.name === confValue );
+                if (apiModelMatch && !usedApiModels.has(apiModelMatch.name)) {
+                    const option = document.createElement('option');
+                    option.value = apiModelMatch.name;
+                    option.textContent = apiModelMatch.displayName;
+                    configuredGroup.appendChild(option);
+                    usedApiModels.add(apiModelMatch.name);
+                }
+            });
+
+            // Add other models from the API
+            apiModels.forEach(apiModel => {
+                if (!usedApiModels.has(apiModel.name)) {
+                    const option = document.createElement('option');
+                    option.value = apiModel.name;
+                    option.textContent = apiModel.displayName;
+                    otherGroup.appendChild(option);
+                }
+            });
+
+            if (configuredGroup.childNodes.length === 0 && otherGroup.childNodes.length === 0) {
+                modelSelect.innerHTML = '<option value="">-- No compatible models found --</option>';
+                modelSelect.disabled = true;
+                return;
+            }
+
+            if (configuredGroup.hasChildNodes()) {
+                modelSelect.appendChild(configuredGroup);
+            }
+            if (otherGroup.hasChildNodes()) {
+                modelSelect.appendChild(otherGroup);
+            }
+
+            modelSelect.value = currentModel;
+            if (!modelSelect.value && modelSelect.options.length > 0) {
+                modelSelect.selectedIndex = 0;
+            }
+        }
+
+        function populateModelDropdownFromConfig() {
+            const platform = platformSelect.value;
+            const config = platformConfigs[platform];
+            const currentModel = profiles[currentProfile].model;
+
+            modelSelect.innerHTML = '';
+            modelSelect.disabled = false;
+
+            if (!config.models || config.models.length === 0) {
+                modelSelect.innerHTML = '<option value="">-- No models configured --</option>';
+                modelSelect.disabled = true;
+                return;
+            }
+
             config.models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model.value;
                 option.textContent = model.label;
                 modelSelect.appendChild(option);
             });
+
+            modelSelect.value = currentModel;
+            if (!modelSelect.value && modelSelect.options.length > 0) {
+                modelSelect.selectedIndex = 0;
+            }
         }
 
         function updatePlatformBadge() {
@@ -193,13 +267,18 @@ Focus on creating value for someone who wants to understand the core content wit
         function loadProfileData() {
             const profile = profiles[currentProfile];
             platformSelect.value = profile.platform;
-            updateModelOptions();
             updatePlatformBadge();
-            modelSelect.value = profile.model;
             apiKeyInput.value = profile.apiKey;
             systemPromptTextarea.value = profile.systemPrompt;
             userPromptTextarea.value = profile.userPrompt;
             settingsSubtitle.textContent = `Now editing profile: "${profile.name}"`;
+
+            modelSelect.innerHTML = '<option value="">-- Test API Key to load models --</option>';
+            modelSelect.disabled = true;
+
+            if (profile.apiKey) {
+                testApiKey(true); // Run test silently on load
+            }
         }
 
         function createNewProfile() {
@@ -252,23 +331,9 @@ Focus on creating value for someone who wants to understand the core content wit
                 return;
             }
 
-            if (apiKey) {
-                saveBtn.textContent = 'Validating & Saving...';
-                saveBtn.disabled = true;
-
-                const response = await new Promise(resolve => {
-                    chrome.runtime.sendMessage({ action: 'testApiKey', platform, apiKey }, (response) => {
-                        resolve(response);
-                    });
-                });
-
-                saveBtn.innerHTML = '💾 Save Settings';
-                saveBtn.disabled = false;
-
-                if (!response.success) {
-                    showStatus(`Invalid API Key: ${response.error}. Settings not saved.`, 'error');
-                    return;
-                }
+            if (!apiKey) {
+                showStatus('API Key is required. Please enter a valid key.', 'error');
+                return;
             }
             
             const profile = profiles[currentProfile];
@@ -310,15 +375,16 @@ Focus on creating value for someone who wants to understand the core content wit
                 profile.userPrompt = DEFAULT_PROMPTS.userPrompt;
                 
                 loadProfileData();
-                saveSettings();
-                showStatus('Reset to default settings', 'success');
+                showStatus('Reset to default settings. Remember to save!', 'success');
             }
         }
 
-        function testApiKey() {
+        function testApiKey(isSilent = false) {
             const apiKey = apiKeyInput.value.trim();
             if (!apiKey) {
-                showStatus('Please enter an API key first', 'error');
+                if (!isSilent) {
+                    showStatus('Please enter an API key first', 'error');
+                }
                 return;
             }
 
@@ -330,10 +396,44 @@ Focus on creating value for someone who wants to understand the core content wit
                 testKeyBtn.textContent = 'Test';
                 testKeyBtn.disabled = false;
 
-                if (response.success) {
-                    showStatus('API key is valid!', 'success');
+                if (response && response.error) {
+                    const errorMsg = response.error.message || response.error;
+                    if (!isSilent) {
+                        showStatus(`Error: ${errorMsg}`, 'error');
+                    }
+                    modelSelect.innerHTML = `<option value="">-- Key validation failed --</option>`;
+                    modelSelect.disabled = true;
+
+                } else if (response && Array.isArray(response.models)) { // Gemini, OpenAI
+                    if (!isSilent) {
+                        showStatus('API key is valid! Models loaded.', 'success');
+                    }
+                    const availableModels = response.models.filter(model => {
+                        if (platform === 'gemini') {
+                            return model.supportedGenerationMethods && model.supportedGenerationMethods.includes('generateContent');
+                        }
+                        if (platform === 'openai') {
+                            const modelId = model.name.toLowerCase();
+                            const disallowed = ['embed', 'whisper', 'tts', 'dall-e'];
+                            return !disallowed.some(term => modelId.includes(term));
+                        }
+                        return true;
+                    });
+                    populateModelDropdown(availableModels);
+
+                } else if (response && response.success) { // Anthropic
+                    if (!isSilent) {
+                        showStatus('API key is valid!', 'success');
+                    }
+                    populateModelDropdownFromConfig();
+
                 } else {
-                    showStatus(`Error: ${response.error}`, 'error');
+                    const errorMsg = 'An unknown error occurred during API key validation.';
+                    if (!isSilent) {
+                        showStatus(`Error: ${errorMsg}`, 'error');
+                    }
+                    modelSelect.innerHTML = `<option value="">-- ${errorMsg} --</option>`;
+                    modelSelect.disabled = true;
                 }
             });
         }
