@@ -1,50 +1,689 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>AI Summarizer Options</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Summarizer Settings</title>
     <style>
-        body {
-            font-family: sans-serif;
-            width: 400px;
-            padding: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 10px 15px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <h1>AI Summarizer Options</h1>
-    <div class="form-group">
-        <label for="api-key">Google Gemini API Key:</label>
-        <input type="text" id="api-key" placeholder="Enter your API key">
-    </div>
-    <button id="save-btn">Save</button>
-    <div id="status"></div>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #2d3748;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        animation: slideUp 0.8s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .header {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        padding: 32px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 70%
+        );
+        animation: rotate 20s linear infinite;
+      }
+
+      @keyframes rotate {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .header-content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #fff, #e0e6ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .main-content {
+        display: flex;
+        min-height: 70vh;
+      }
+
+      .sidebar {
+        width: 280px;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        padding: 32px 24px;
+      }
+
+      .profile-section {
+        margin-bottom: 32px;
+      }
+
+      .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .profile-header h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .add-profile-btn {
+        background: linear-gradient(135deg, #48cae4, #023e8a);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .add-profile-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(72, 202, 228, 0.3);
+      }
+
+      .profile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .profile-item {
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .profile-item:hover {
+        background: #e2e8f0;
+        transform: translateX(4px);
+      }
+
+      .profile-item.active {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        border-color: #4f46e5;
+      }
+
+      .profile-name {
+        font-weight: 500;
+      }
+
+      .delete-profile-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: currentColor;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+
+      .profile-item:hover .delete-profile-btn {
+        opacity: 1;
+      }
+
+      .delete-profile-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .content-area {
+        flex: 1;
+        padding: 32px;
+        overflow-y: auto;
+      }
+
+      .section {
+        margin-bottom: 40px;
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+      }
+
+      .section:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+      }
+
+      .platform-icon {
+        background: linear-gradient(135deg, #ff6b6b, #feca57);
+      }
+
+      .prompt-icon {
+        background: linear-gradient(135deg, #48cae4, #023e8a);
+      }
+
+      .section h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+      }
+
+      select,
+      input[type="text"],
+      input[type="password"],
+      textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        background: white;
+      }
+
+      select:focus,
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+        font-family: "Monaco", "Menlo", monospace;
+        font-size: 0.9rem;
+      }
+
+      .model-selector {
+        position: relative;
+      }
+
+      .model-selector select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+      }
+
+      .api-key-input {
+        position: relative;
+      }
+
+      .api-key-input input {
+        padding-right: 100px;
+      }
+
+      .test-key-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: linear-gradient(135deg, #48cae4, #023e8a);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .test-key-btn:hover {
+        background: linear-gradient(135deg, #023e8a, #48cae4);
+      }
+
+      .actions {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 24px 32px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .btn:hover::before {
+        left: 100%;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+      }
+
+      .btn-secondary {
+        background: #f7fafc;
+        color: #4a5568;
+        border: 2px solid #e2e8f0;
+      }
+
+      .btn-secondary:hover {
+        background: #edf2f7;
+        border-color: #cbd5e0;
+      }
+
+      .status-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: all 0.3s ease;
+      }
+
+      .status-message.show {
+        transform: translateX(0);
+      }
+
+      .status-message.success {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+      }
+
+      .status-message.error {
+        background: linear-gradient(135deg, #f56565, #e53e3e);
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        width: 90%;
+        max-width: 500px;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+      }
+
+      .modal.show .modal-content {
+        transform: scale(1);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      .modal-header h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #a0aec0;
+        padding: 4px;
+      }
+
+      .close-modal:hover {
+        color: #4a5568;
+      }
+
+      .platform-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 8px;
+      }
+
+      .platform-badge.openai {
+        background: #e6fffa;
+        color: #00a3c4;
+      }
+
+      .platform-badge.anthropic {
+        background: #fef5e7;
+        color: #d69e2e;
+      }
+
+      .platform-badge.gemini {
+        background: #edf2f7;
+        color: #4a5568;
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .container {
+          margin: 10px;
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="header-content">
+          <h1>⚙️ Settings</h1>
+          <p>Configure your AI platforms, models, and custom prompts</p>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="sidebar">
+          <div class="profile-section">
+            <div class="profile-header">
+              <h3>Profiles</h3>
+              <button class="add-profile-btn" id="add-profile-btn">
+                + Add
+              </button>
+            </div>
+            <div class="profile-list" id="profile-list">
+              <div class="profile-item active" data-profile="default">
+                <span class="profile-name">Default</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-area">
+          <div class="section">
+            <div class="section-header">
+              <div class="section-icon platform-icon">🤖</div>
+              <h3>AI Platform Configuration</h3>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="platform-select">AI Platform</label>
+                <div class="model-selector">
+                  <select id="platform-select">
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="gemini" selected>Google Gemini</option>
+                  </select>
+                </div>
+                <div class="platform-badge gemini" id="platform-badge">
+                  🔮 Google Gemini
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="model-select">Model</label>
+                <div class="model-selector">
+                  <select id="model-select">
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="api-key">API Key</label>
+              <div class="api-key-input">
+                <input
+                  type="password"
+                  id="api-key"
+                  placeholder="Enter your API key"
+                />
+                <button class="test-key-btn" id="test-key-btn">Test</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-header">
+              <div class="section-icon prompt-icon">💬</div>
+              <h3>Custom Prompts</h3>
+            </div>
+
+            <div class="form-group">
+              <label for="system-prompt">System Prompt</label>
+              <textarea
+                id="system-prompt"
+                placeholder="Define the AI's role and behavior..."
+              >
+You are an expert content summarizer. Analyze the provided YouTube video transcript and create a concise, well-structured summary in bullet points.</textarea
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="user-prompt">User Prompt Template</label>
+              <textarea
+                id="user-prompt"
+                placeholder="Define how the user request is formatted..."
+              >
+Here's a YouTube video transcript. Please provide a concise summary with key points in bullet format:
+
+{transcript}
+
+Focus on:
+- Main topics and themes
+- Key insights and takeaways
+- Important details and conclusions</textarea
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" id="reset-btn">
+          Reset to Default
+        </button>
+        <button class="btn btn-primary" id="save-btn">💾 Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="status-message"></div>
+
+    <!-- Add Profile Modal -->
+    <div class="modal" id="profile-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create New Profile</h3>
+          <button class="close-modal" id="close-modal">&times;</button>
+        </div>
+        <div class="form-group">
+          <label for="profile-name-input">Profile Name</label>
+          <input
+            type="text"
+            id="profile-name-input"
+            placeholder="e.g., Academic, Business, Personal"
+          />
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 24px;
+          "
+        >
+          <button class="btn btn-secondary" id="cancel-profile">Cancel</button>
+          <button class="btn btn-primary" id="create-profile">
+            Create Profile
+          </button>
+        </div>
+      </div>
+    </div>
     <script src="options.js"></script>
-</body>
+  </body>
 </html>
