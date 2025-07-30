@@ -1,7 +1,53 @@
-
 // options.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    const DEFAULT_PROMPTS = {
+        systemPrompt: `You are an expert content summarizer specializing in YouTube video analysis. Your task is to transform video transcripts into clear, actionable summaries that help viewers quickly understand the key value and decide whether to watch the full video.
+
+FORMATTING REQUIREMENTS:
+- Use bullet points with clear hierarchy (main points with sub-points when needed)
+- Start with a brief one-sentence overview
+- Organize content logically by topics or chronological flow
+- Include specific examples, numbers, or actionable items when mentioned
+- Use bold text for key concepts and important terms
+
+CONTENT FOCUS:
+- Extract the main thesis or purpose of the video
+- Identify 3-7 key takeaways or insights
+- Include any specific steps, tips, or recommendations
+- Include timestamp in generated summary for referring to the video time
+- Note important context (who, what, when, where relevant)
+- Highlight any surprising or counterintuitive information
+- Mention tools, resources, or references if provided
+
+OUTPUT STRUCTURE:
+- Overview (1 sentence)
+- Key Points (3-7 main bullets with sub-points as needed)
+- Actionable Takeaways (if applicable)
+- Notable Mentions (tools, resources, people referenced)
+
+Keep summaries concise but comprehensive - aim for someone to get 80% of the value in 20% of the reading time.`,
+        userPrompt: `Please analyze this YouTube video transcript and create a comprehensive summary following your formatting guidelines.
+
+**Video Context:**
+- Title: {video_title}
+- Duration: {video_duration}
+- Channel: {channel_name}
+
+**Transcript:**
+{transcript}
+
+**Summary Requirements:**
+- Provide a one-sentence overview of the video's main purpose
+- Extract 3-7 key points with supporting details
+- Include any actionable steps, tips, or recommendations
+- Highlight specific examples, numbers, or tools mentioned
+- Note any surprising insights or counterintuitive information
+- End with notable resources or references if mentioned
+
+Focus on creating value for someone who wants to understand the core content without watching the full video.`
+    };
+
     let platformConfigs = {};
 
         let currentProfile = 'default';
@@ -11,8 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 platform: 'gemini',
                 model: 'gemini-1.5-flash',
                 apiKey: '',
-                systemPrompt: 'You are an expert content summarizer. Analyze the provided YouTube video transcript and create a concise, well-structured summary in bullet points.',
-                userPrompt: `Here's a YouTube video transcript. Please provide a concise summary with key points in bullet format:\n\n{transcript}\n\nFocus on:\n- Main topics and themes\n- Key insights and takeaways\n- Important details and conclusions`
+                systemPrompt: DEFAULT_PROMPTS.systemPrompt,
+                userPrompt: DEFAULT_PROMPTS.userPrompt
             }
         };
 
@@ -166,8 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 platform: 'gemini',
                 model: 'gemini-1.5-flash',
                 apiKey: '',
-                systemPrompt: profiles.default.systemPrompt,
-                userPrompt: profiles.default.userPrompt
+                systemPrompt: DEFAULT_PROMPTS.systemPrompt,
+                userPrompt: DEFAULT_PROMPTS.userPrompt
             };
 
             profileModal.classList.remove('show');
@@ -188,7 +234,35 @@ document.addEventListener('DOMContentLoaded', () => {
             showStatus('Profile deleted', 'success');
         }
 
-        function saveSettings() {
+        async function saveSettings() {
+            const apiKey = apiKeyInput.value.trim();
+            const platform = platformSelect.value;
+            const model = modelSelect.value;
+
+            if (!model) {
+                showStatus('Please select a model before saving.', 'error');
+                return;
+            }
+
+            if (apiKey) {
+                saveBtn.textContent = 'Validating & Saving...';
+                saveBtn.disabled = true;
+
+                const response = await new Promise(resolve => {
+                    chrome.runtime.sendMessage({ action: 'testApiKey', platform, apiKey }, (response) => {
+                        resolve(response);
+                    });
+                });
+
+                saveBtn.innerHTML = '💾 Save Settings';
+                saveBtn.disabled = false;
+
+                if (!response.success) {
+                    showStatus(`Invalid API Key: ${response.error}. Settings not saved.`, 'error');
+                    return;
+                }
+            }
+            
             const profile = profiles[currentProfile];
             profile.platform = platformSelect.value;
             profile.model = modelSelect.value;
@@ -220,15 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function resetToDefault() {
             if (confirm('Are you sure you want to reset to default settings?')) {
-                profiles[currentProfile] = {
-                    ...profiles[currentProfile],
-                    platform: 'gemini',
-                    model: 'gemini-1.5-flash',
-                    apiKey: '',
-                    systemPrompt: profiles.default.systemPrompt,
-                    userPrompt: profiles.default.userPrompt
-                };
+                const profile = profiles[currentProfile];
+                profile.platform = 'gemini';
+                profile.model = 'gemini-1.5-flash';
+                profile.apiKey = '';
+                profile.systemPrompt = DEFAULT_PROMPTS.systemPrompt;
+                profile.userPrompt = DEFAULT_PROMPTS.userPrompt;
+                
                 loadProfileData();
+                saveSettings();
                 showStatus('Reset to default settings', 'success');
             }
         }
