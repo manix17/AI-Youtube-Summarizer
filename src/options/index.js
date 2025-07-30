@@ -1,53 +1,7 @@
 // options.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    const DEFAULT_PROMPTS = {
-        systemPrompt: `You are an expert content summarizer specializing in YouTube video analysis. Your task is to transform video transcripts into clear, actionable summaries that help viewers quickly understand the key value and decide whether to watch the full video.
-
-FORMATTING REQUIREMENTS:
-- Use bullet points with clear hierarchy (main points with sub-points when needed)
-- Start with a brief one-sentence overview
-- Organize content logically by topics or chronological flow
-- Include specific examples, numbers, or actionable items when mentioned
-- Use bold text for key concepts and important terms
-
-CONTENT FOCUS:
-- Extract the main thesis or purpose of the video
-- Identify 3-7 key takeaways or insights
-- Include any specific steps, tips, or recommendations
-- Include timestamp in generated summary for referring to the video time
-- Note important context (who, what, when, where relevant)
-- Highlight any surprising or counterintuitive information
-- Mention tools, resources, or references if provided
-
-OUTPUT STRUCTURE:
-- Overview (1 sentence)
-- Key Points (3-7 main bullets with sub-points as needed)
-- Actionable Takeaways (if applicable)
-- Notable Mentions (tools, resources, people referenced)
-
-Keep summaries concise but comprehensive - aim for someone to get 80% of the value in 20% of the reading time.`,
-        userPrompt: `Please analyze this YouTube video transcript and create a comprehensive summary following your formatting guidelines.
-
-**Video Context:**
-- Title: {video_title}
-- Duration: {video_duration}
-- Channel: {channel_name}
-
-**Transcript:**
-{transcript}
-
-**Summary Requirements:**
-- Provide a one-sentence overview of the video's main purpose
-- Extract 3-7 key points with supporting details
-- Include any actionable steps, tips, or recommendations
-- Highlight specific examples, numbers, or tools mentioned
-- Note any surprising insights or counterintuitive information
-- End with notable resources or references if mentioned
-
-Focus on creating value for someone who wants to understand the core content without watching the full video.`
-    };
-
+    let DEFAULT_PROMPTS = {};
     let platformConfigs = {};
 
         let currentProfile = 'default';
@@ -57,8 +11,8 @@ Focus on creating value for someone who wants to understand the core content wit
                 platform: 'gemini',
                 model: 'gemini-1.5-flash',
                 apiKey: '',
-                systemPrompt: DEFAULT_PROMPTS.systemPrompt,
-                userPrompt: DEFAULT_PROMPTS.userPrompt
+                systemPrompt: '', // Will be loaded from prompts.json
+                userPrompt: ''   // Will be loaded from prompts.json
             }
         };
 
@@ -84,8 +38,19 @@ Focus on creating value for someone who wants to understand the core content wit
 
         async function initialize() {
             try {
-                const response = await fetch(chrome.runtime.getURL('assets/platform_configs.json'));
-                platformConfigs = await response.json();
+                const [platformRes, promptsRes] = await Promise.all([
+                    fetch(chrome.runtime.getURL('assets/platform_configs.json')),
+                    fetch(chrome.runtime.getURL('assets/prompts.json'))
+                ]);
+                
+                platformConfigs = await platformRes.json();
+                DEFAULT_PROMPTS = await promptsRes.json();
+
+                // If the default profile is still empty, populate it now
+                if (profiles.default.systemPrompt === '') {
+                    profiles.default.systemPrompt = DEFAULT_PROMPTS.systemPrompt;
+                    profiles.default.userPrompt = DEFAULT_PROMPTS.userPrompt;
+                }
                 
                 await loadSettings();
                 setupEventListeners();
