@@ -75,11 +75,11 @@ async function handleSummarizeClick() {
 
   let finalTranscript = null;
 
-  // const response = await fetch(chrome.runtime.getURL("md_rendering_test.json"));
-  // summaries = await response.json();
-  // console.log("Summary: ", summaries);
-  // handleResponse(summaries[3]);
-  // return;
+  const response = await fetch(chrome.runtime.getURL("md_rendering_test.json"));
+  summaries = await response.json();
+  console.log("Summary: ", summaries);
+  handleResponse(summaries[5]);
+  return;
 
   try {
     // First, try the API method
@@ -293,7 +293,7 @@ function closeAllLists(levels, indent) {
 function linkifyTimestamps(text) {
   // Regex to find timestamps like [7:10], (7:10), [7:10-7:29], or (7:10-7:29)
   const timestampRegex =
-    /[\[\(](\d{1,2}:\d{2}(?::\d{2})?)(?:-\d{1,2}:\d{2}(?::\d{2})?)?[\]\)]/g;
+    /[\[\(]((\d{1,2}:\d{2}(?::\d{2})?)(?:(?:[-\s]|\s*,\s*)\d{1,2}:\d{2}(?::\d{2})?)*)[\]\)]/g;
 
   return text.replace(timestampRegex, (match) => {
     // Extract the start time, which is the first timestamp found in the match
