@@ -84,7 +84,7 @@ Focus on creating value for someone who wants to understand the core content wit
 
         async function initialize() {
             try {
-                const response = await fetch('platform_configs.json');
+                const response = await fetch(chrome.runtime.getURL('assets/platform_configs.json'));
                 platformConfigs = await response.json();
                 
                 await loadSettings();
