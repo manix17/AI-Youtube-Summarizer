@@ -80,6 +80,7 @@ Focus on creating value for someone who wants to understand the core content wit
         const createProfileBtn = document.getElementById('create-profile');
         const cancelProfileBtn = document.getElementById('cancel-profile');
         const closeModalBtn = document.getElementById('close-modal');
+        const settingsSubtitle = document.getElementById('settings-subtitle');
 
         async function initialize() {
             try {
@@ -178,9 +179,15 @@ Focus on creating value for someone who wants to understand the core content wit
         }
 
         function switchProfile(profileId) {
+            if (currentProfile === profileId) return;
+
             currentProfile = profileId;
-            loadProfileData();
-            renderProfiles();
+            
+            chrome.storage.sync.set({ currentProfile: currentProfile }, () => {
+                loadProfileData();
+                renderProfiles();
+                showStatus(`Switched to "${profiles[currentProfile].name}" profile`, 'success');
+            });
         }
 
         function loadProfileData() {
@@ -192,6 +199,7 @@ Focus on creating value for someone who wants to understand the core content wit
             apiKeyInput.value = profile.apiKey;
             systemPromptTextarea.value = profile.systemPrompt;
             userPromptTextarea.value = profile.userPrompt;
+            settingsSubtitle.textContent = `Now editing profile: "${profile.name}"`;
         }
 
         function createNewProfile() {
