@@ -1,0 +1,28 @@
+{
+    "openai": {
+        "name": "🧠 OpenAI",
+        "className": "openai",
+        "models": [
+            { "value": "gpt-4", "label": "GPT-4" },
+            { "value": "gpt-4-turbo", "label": "GPT-4 Turbo" },
+            { "value": "gpt-3.5-turbo", "label": "GPT-3.5 Turbo" }
+        ]
+    },
+    "anthropic": {
+        "name": "🎭 Anthropic Claude",
+        "className": "anthropic",
+        "models": [
+            { "value": "claude-3-sonnet", "label": "Claude 3 Sonnet" },
+            { "value": "claude-3-opus", "label": "Claude 3 Opus" },
+            { "value": "claude-3-haiku", "label": "Claude 3 Haiku" }
+        ]
+    },
+    "gemini": {
+        "name": "🔮 Google Gemini",
+        "className": "gemini",
+        "models": [
+            { "value": "gemini-2.0-flash", "label": "Gemini 2.0 Flash" },
+            { "value": "gemini-2.5-pro", "label": "Gemini 2.5 Pro" }
+        ]
+    }
+}
