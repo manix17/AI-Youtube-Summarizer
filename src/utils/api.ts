@@ -1,13 +1,27 @@
-// src/utils/api.js
+import type {
+    Platform,
+    Profile,
+    ApiConfig,
+    ApiRequestPayload,
+    ApiResponse,
+    ApiErrorResponse,
+    OpenAIRequest,
+    AnthropicRequest,
+    GeminiRequest,
+    OpenAIResponse,
+    AnthropicResponse,
+    GeminiResponse
+} from '../types';
+
 
 /**
  * Returns the API configuration for a given platform.
- * @param {string} platform - The AI platform (e.g., 'openai', 'gemini').
+ * @param {Platform} platform - The AI platform (e.g., 'openai', 'gemini').
  * @param {string} model - The specific model name.
- * @returns {object} The configuration object for the platform.
+ * @returns {ApiConfig} The configuration object for the platform.
  */
-function getApiConfig(platform, model) {
-    const configs = {
+function getApiConfig(platform: Platform, model: string): ApiConfig {
+    const configs: Record<Platform, ApiConfig> = {
         openai: {
             url: 'https://api.openai.com/v1/chat/completions'
         },
@@ -23,13 +37,13 @@ function getApiConfig(platform, model) {
 
 /**
  * Builds the request payload for the specified AI platform.
- * @param {string} platform - The AI platform.
+ * @param {Platform} platform - The AI platform.
  * @param {string} model - The AI model.
  * @param {string} systemPrompt - The system prompt.
  * @param {string} userPrompt - The user prompt.
- * @returns {object} The request payload.
+ * @returns {ApiRequestPayload} The request payload.
  */
-function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
+function buildRequestPayload(platform: Platform, model: string, systemPrompt: string, userPrompt: string): ApiRequestPayload {
     switch (platform) {
         case 'openai':
             return {
@@ -38,14 +52,14 @@ function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ]
-            };
+            } as OpenAIRequest;
         case 'anthropic':
             return {
                 model: model,
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userPrompt }],
                 max_tokens: 4096
-            };
+            } as AnthropicRequest;
         case 'gemini':
             return {
                 contents: [
@@ -54,7 +68,7 @@ function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
                         parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
                     }
                 ]
-            };
+            } as GeminiRequest;
         default:
             throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -62,12 +76,12 @@ function buildRequestPayload(platform, model, systemPrompt, userPrompt) {
 
 /**
  * Builds the request headers for the specified AI platform.
- * @param {string} platform - The AI platform.
+ * @param {Platform} platform - The AI platform.
  * @param {string} apiKey - The user's API key.
- * @returns {object} The request headers.
+ * @returns {Record<string, string>} The request headers.
  */
-function buildRequestHeaders(platform, apiKey) {
-    const headers = { 'Content-Type': 'application/json' };
+function buildRequestHeaders(platform: Platform, apiKey: string): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     switch (platform) {
         case 'openai':
             headers['Authorization'] = `Bearer ${apiKey}`;
@@ -85,25 +99,26 @@ function buildRequestHeaders(platform, apiKey) {
 
 /**
  * Extracts the summary from the API response.
- * @param {string} platform - The AI platform.
- * @param {object} data - The response data from the API.
+ * @param {Platform} platform - The AI platform.
+ * @param {ApiResponse} data - The response data from the API.
  * @returns {string} The summary text.
  */
-function extractSummaryFromResponse(platform, data) {
+function extractSummaryFromResponse(platform: Platform, data: ApiResponse): string {
     try {
         switch (platform) {
             case 'openai':
-                return data.choices[0].message.content;
+                return (data as OpenAIResponse).choices[0].message.content;
             case 'anthropic':
-                return data.content[0].text;
+                return (data as AnthropicResponse).content[0].text;
             case 'gemini':
-                if (!data.candidates || data.candidates.length === 0) {
-                    if (data.promptFeedback && data.promptFeedback.blockReason) {
-                        throw new Error(`API blocked the prompt due to: ${data.promptFeedback.blockReason}`);
+                const geminiData = data as GeminiResponse;
+                if (!geminiData.candidates || geminiData.candidates.length === 0) {
+                    if (geminiData.promptFeedback && geminiData.promptFeedback.blockReason) {
+                        throw new Error(`API blocked the prompt due to: ${geminiData.promptFeedback.blockReason}`);
                     }
                     throw new Error("API did not return any summary candidates.");
                 }
-                return data.candidates[0].content.parts[0].text;
+                return geminiData.candidates[0].content.parts[0].text;
             default:
                 throw new Error(`Unsupported platform: ${platform}`);
         }
@@ -115,12 +130,12 @@ function extractSummaryFromResponse(platform, data) {
 
 /**
  * Handles API errors and returns a user-friendly message.
- * @param {string} platform - The AI platform.
- * @param {object} errorData - The error data from the API response.
+ * @param {Platform} platform - The AI platform.
+ * @param {ApiErrorResponse} errorData - The error data from the API response.
  * @param {number} status - The HTTP status code.
  * @returns {string} A formatted error message.
  */
-function handleApiError(platform, errorData, status) {
+function handleApiError(platform: Platform, errorData: ApiErrorResponse, status: number): string {
     let message = `API Error (${status}): `;
     try {
         switch (platform) {
@@ -135,7 +150,7 @@ function handleApiError(platform, errorData, status) {
                 break;
             case 'gemini':
                 message += errorData.error?.message || JSON.stringify(errorData);
-                if (errorData.error?.message.includes("API key not valid")) {
+                if (errorData.error?.message?.includes("API key not valid")) {
                     message = "The provided Google Gemini API key is not valid.";
                 }
                 break;
@@ -150,14 +165,14 @@ function handleApiError(platform, errorData, status) {
 
 /**
  * The main summarization function that orchestrates the API call.
- * @param {object} profile - The user's current profile settings.
+ * @param {Profile} profile - The user's current profile settings.
  * @param {string} transcript - The video transcript.
  * @param {string} videoTitle - The title of the video.
  * @param {string} videoDuration - The duration of the video.
  * @param {string} channelName - The name of the channel.
  * @returns {Promise<string>} A promise that resolves with the summary.
  */
-export async function generateSummary(profile, transcript, videoTitle, videoDuration, channelName) {
+export async function generateSummary(profile: Profile, transcript: string, videoTitle: string, videoDuration: string, channelName: string): Promise<string> {
     const { platform, model, apiKey, systemPrompt, userPrompt } = profile;
     
     let finalUserPrompt = userPrompt
@@ -182,17 +197,20 @@ export async function generateSummary(profile, transcript, videoTitle, videoDura
             body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        const data: ApiResponse | ApiErrorResponse = await response.json();
 
         if (!response.ok) {
-            const errorMessage = handleApiError(platform, data, response.status);
+            const errorMessage = handleApiError(platform, data as ApiErrorResponse, response.status);
             throw new Error(errorMessage);
         }
 
-        return extractSummaryFromResponse(platform, data);
+        return extractSummaryFromResponse(platform, data as ApiResponse);
     } catch (error) {
         console.error("Error during summarization:", error);
         // Re-throw the error to be caught by the caller
-        throw new Error(`Could not generate summary. ${error.message}`);
+        if (error instanceof Error) {
+            throw new Error(`Could not generate summary. ${error.message}`);
+        }
+        throw new Error('An unknown error occurred during summarization.');
     }
 }

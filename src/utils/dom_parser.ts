@@ -1,11 +1,11 @@
-// src/utils/dom_parser.js
+// src/utils/dom_parser.ts
 
 /**
  * Pre-processes text that might be an escaped JSON string.
  * @param {string} text - The input text.
  * @returns {string} The cleaned text.
  */
-function preprocessText(text) {
+function preprocessText(text: string): string {
     if (text.startsWith('"') && text.endsWith('"')) {
         text = text.slice(1, -1);
     }
@@ -22,7 +22,7 @@ function preprocessText(text) {
  * @param {string} text - The line of text to process.
  * @returns {string} The HTML-formatted string.
  */
-function processInlineFormatting(text) {
+function processInlineFormatting(text: string): string {
     text = linkifyTimestamps(text);
     text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
     text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -35,8 +35,8 @@ function processInlineFormatting(text) {
  * @param {string} text - The text to process.
  * @returns {string} The text with HTML links for timestamps.
  */
-function linkifyTimestamps(text) {
-    const timestampRegex = /[\[\(]((\d{1,2}:\d{2}(?::\d{2})?)(?:(?:[-\s]|\s*,\s*)\d{1,2}:\d{2}(?::\d{2})?)*)[\]\)]/g;
+function linkifyTimestamps(text: string): string {
+    const timestampRegex = /[[\](\(]((\d{1,2}:\d{2}(?::\d{2})?)(?:(?:[-\s]|\s*,\s*)\d{1,2}:\d{2}(?::\d{2})?)*)[[\])]/g;
     return text.replace(timestampRegex, (match) => {
         const startTimeMatch = match.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
         if (!startTimeMatch) return match;
@@ -61,7 +61,7 @@ function linkifyTimestamps(text) {
  * @param {string} indent - The indentation string.
  * @returns {string} The closing HTML tags.
  */
-function closeAllLists(levels, indent) {
+function closeAllLists(levels: number, indent: string): string {
     let html = "";
     for (let i = levels; i > 0; i--) {
         html += `${indent.repeat(i - 1)}</ul>\n`;
@@ -74,7 +74,7 @@ function closeAllLists(levels, indent) {
  * @param {string} text - The input text with markdown formatting.
  * @returns {string} The resulting HTML string.
  */
-export function convertToHTML(text) {
+export function convertToHTML(text: string): string {
     text = preprocessText(text);
     const lines = text.split("\n");
     let html = "";
