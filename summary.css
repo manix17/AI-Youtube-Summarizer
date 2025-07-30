@@ -7,12 +7,11 @@
 
 .markdown-content p,
 .markdown-content li {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
 }
 
 .markdown-content h1, .markdown-content h2, .markdown-content h3 {
     color: #1a202c;
-    margin-bottom: 16px;
     font-weight: 600;
 }
 
@@ -27,16 +26,18 @@
     color: #4f46e5;
 }
 
-.markdown-content h3 {
-    font-size: 1.25rem;
-    color: #6366f1;
+.markdown-content h3, .summary-container h3 {
+    font-size: 1.8rem;
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    color: #065fd4;
 }
 
 .markdown-content p {
-    /* margin-bottom: 16px; */
     color: #4a5568;
     line-height: 1.5;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
+    padding-top: 10px;
 }
 
 .markdown-content ul {
@@ -154,15 +155,6 @@
     color: #2d3748;
     padding: 32px;
     animation: slideUp 0.6s ease-out;
-}
-
-.summary-container h3 {
-    color: #065fd4;
-    font-size: 1.8em;
-    margin-top: 0;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
 }
 
 .summarize-btn {

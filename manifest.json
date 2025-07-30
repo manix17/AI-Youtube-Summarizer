@@ -33,7 +33,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injector.js", "summary.css"],
+      "resources": ["injector.js", "summary.css", "md_rendering_test.json"],
       "matches": ["*://www.youtube.com/*"]
     }
   ]

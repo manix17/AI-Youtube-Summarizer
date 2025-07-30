@@ -75,10 +75,11 @@ async function handleSummarizeClick() {
 
   let finalTranscript = null;
 
-  // const response = await fetch('platform_configs.json');
-  // summaries = await response.json();
-  // handleResponse(summaries[0]);
-  // return;
+  const response = await fetch(chrome.runtime.getURL('md_rendering_test.json'));
+  summaries = await response.json();
+  console.log("Summary: ", summaries);
+  handleResponse(summaries[3]);
+  return;
 
   try {
     // First, try the API method
