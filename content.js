@@ -2,22 +2,18 @@
 
 // --- 1. Function to Inject the Summarize Button ---
 function injectSummarizeButton() {
-  // Find a stable element on the YouTube page to append our button to.
-  // The area below the video title is a good candidate.
   const targetElement = document.querySelector("#below");
 
   if (targetElement && !document.getElementById("summarize-btn")) {
     const button = document.createElement("button");
     button.innerText = "✨ Summarize Video";
     button.id = "summarize-btn";
-    
-    // Simple styling to make the button stand out
     button.classList.add('summarize-btn');
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
     summaryContainer.classList.add('summary-container');
-    summaryContainer.style.display = 'none'; // Initially hidden
+    summaryContainer.style.display = 'none';
 
     const closeButton = document.createElement("button");
     closeButton.id = "close-summary-btn";
@@ -37,7 +33,21 @@ function injectSummarizeButton() {
 
     button.addEventListener("click", handleSummarizeClick);
 
-    // Inject custom CSS for styling the summary
+    // Add a delegated click listener for our timestamp links
+    summaryContainer.addEventListener('click', (e) => {
+      
+        const target = e.target.closest('.timestamp-link');
+        
+        if (target) {
+            e.preventDefault();
+            const seconds = parseInt(target.dataset.seconds, 10);
+            const player = document.querySelector('video');
+            if (player) {
+                player.currentTime = seconds;
+            }
+        }
+    });
+
     injectCss('summary.css');
   }
 }
@@ -133,152 +143,83 @@ function handleResponse(response) {
 function parseMarkdown(text) {
     if (!text) return '';
     
-    // Split text into lines for processing
     const lines = text.split('\n');
     let result = [];
     let inList = false;
-    let inOrderedList = false;
-    let currentIndent = 0;
-    let listStack = [];
     
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+    for (const line of lines) {
         const trimmedLine = line.trim();
         
-        // Skip empty lines but preserve spacing
         if (trimmedLine === '') {
-            if (inList || inOrderedList) {
-                // Don't add empty paragraphs inside lists
-                continue;
+            if (inList) {
+                result.push('</ul>');
+                inList = false;
             }
             result.push('<br>');
             continue;
         }
         
-        // Handle headers
         if (trimmedLine.startsWith('### ')) {
-            closeAllLists();
-            result.push(`<h3>${trimmedLine.substring(4)}</h3>`);
+            if (inList) result.push('</ul>');
+            inList = false;
+            result.push(`<h3>${linkifyTimestamps(trimmedLine.substring(4))}</h3>`);
         } else if (trimmedLine.startsWith('## ')) {
-            closeAllLists();
-            result.push(`<h2>${trimmedLine.substring(3)}</h2>`);
+            if (inList) result.push('</ul>');
+            inList = false;
+            result.push(`<h2>${linkifyTimestamps(trimmedLine.substring(3))}</h2>`);
         } else if (trimmedLine.startsWith('# ')) {
-            closeAllLists();
-            result.push(`<h1>${trimmedLine.substring(2)}</h1>`);
-        }
-        // Handle bullet points
-        else if (trimmedLine.startsWith('*   ') || trimmedLine.startsWith('- ')) {
-            if (inOrderedList) {
-                closeOrderedList();
-            }
+            if (inList) result.push('</ul>');
+            inList = false;
+            result.push(`<h1>${linkifyTimestamps(trimmedLine.substring(2))}</h1>`);
+        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
             if (!inList) {
                 result.push('<ul>');
                 inList = true;
             }
-            const content = trimmedLine.startsWith('*   ') ? 
-                           trimmedLine.substring(4) : 
-                           trimmedLine.substring(2);
-            result.push(`<li>${parseInlineMarkdown(content)}</li>`);
-        }
-        // Handle numbered lists (with proper indentation detection)
-        else if (trimmedLine.match(/^\s*\d+\.\s+/)) {
-            const indentMatch = line.match(/^(\s*)/);
-            const indent = indentMatch ? indentMatch[1].length : 0;
-            
-            if (indent > 0 && inList) {
-                // This is a nested numbered list within a bullet point
-                if (!inOrderedList) {
-                    // Remove the closing </li> from the previous bullet point
-                    const lastIndex = result.length - 1;
-                    if (result[lastIndex].endsWith('</li>')) {
-                        result[lastIndex] = result[lastIndex].replace('</li>', '');
-                    }
-                    result.push('<ol class="nested-list">');
-                    inOrderedList = true;
-                }
-                const content = trimmedLine.replace(/^\s*\d+\.\s+/, '');
-                result.push(`<li>${parseInlineMarkdown(content)}</li>`);
-            } else {
-                // Top-level numbered list
-                closeAllLists();
-                if (!inOrderedList) {
-                    result.push('<ol>');
-                    inOrderedList = true;
-                }
-                const content = trimmedLine.replace(/^\d+\.\s+/, '');
-                result.push(`<li>${parseInlineMarkdown(content)}</li>`);
-            }
-        }
-        // Handle blockquotes
-        else if (trimmedLine.startsWith('> ')) {
-            closeAllLists();
-            result.push(`<blockquote>${parseInlineMarkdown(trimmedLine.substring(2))}</blockquote>`);
-        }
-        // Handle regular paragraphs
-        else {
-            // Check if we need to close nested ordered list
-            if (inOrderedList && inList) {
-                result.push('</ol></li>');
-                inOrderedList = false;
-            } else if (inOrderedList && !inList) {
-                result.push('</ol>');
-                inOrderedList = false;
-            } else if (inList && !trimmedLine.startsWith('*') && !trimmedLine.startsWith('-')) {
+            result.push(`<li>${linkifyTimestamps(parseInlineMarkdown(trimmedLine.substring(2)))}</li>`);
+        } else {
+            if (inList) {
                 result.push('</ul>');
                 inList = false;
             }
-            
-            if (trimmedLine) {
-                result.push(`<p>${parseInlineMarkdown(trimmedLine)}</p>`);
-            }
+            result.push(`<p>${linkifyTimestamps(parseInlineMarkdown(trimmedLine))}</p>`);
         }
     }
     
-    // Close any remaining open lists
-    closeAllLists();
-    
-    function closeAllLists() {
-        if (inOrderedList && inList) {
-            result.push('</ol></li>');
-            inOrderedList = false;
-        }
-        if (inOrderedList) {
-            result.push('</ol>');
-            inOrderedList = false;
-        }
-        if (inList) {
-            result.push('</ul>');
-            inList = false;
-        }
+    if (inList) {
+        result.push('</ul>');
     }
     
-    function closeOrderedList() {
-        if (inOrderedList && inList) {
-            result.push('</ol></li>');
-        } else if (inOrderedList) {
-            result.push('</ol>');
-        }
-        inOrderedList = false;
-    }
-    
-    return result.join('\n');
+    return result.join('');
 }
 
-// Function to parse inline markdown (bold, italic, code, etc.)
 function parseInlineMarkdown(text) {
-    // Bold text
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+function linkifyTimestamps(text) {
+    // Regex to find timestamps like [7:10], (7:10), [7:10-7:29], or (7:10-7:29)
+    const timestampRegex = /[\[\(](\d{1,2}:\d{2}(?::\d{2})?)(?:-\d{1,2}:\d{2}(?::\d{2})?)?[\]\)]/g;
     
-    // Italic text
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Code
-    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-    // Links (basic)
-    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-    
-    return text;
+    return text.replace(timestampRegex, (match) => {
+        // Extract the start time, which is the first timestamp found in the match
+        const startTimeMatch = match.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+        if (!startTimeMatch) return match; // Should not happen with the regex, but as a safeguard
+        
+        const startTime = startTimeMatch[0];
+        const parts = startTime.split(':').map(Number);
+        let seconds = 0;
+        if (parts.length === 3) { // HH:MM:SS
+            seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else { // MM:SS
+            seconds = parts[0] * 60 + parts[1];
+        }
+        
+        return `<a href="javascript:void(0)" data-seconds="${seconds}" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">${match}</a>`;
+    });
 }
 
 function handleError(error) {
