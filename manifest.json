@@ -3,15 +3,9 @@
   "name": "AI YouTube Summarizer",
   "version": "1.0",
   "description": "Summarizes YouTube videos using AI by reading the transcript.",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "storage"
-  ],
+  "permissions": ["activeTab", "scripting", "storage"],
   "options_page": "options.html",
-  "host_permissions": [
-    "https://generativelanguage.googleapis.com/"
-  ],
+  "host_permissions": ["https://generativelanguage.googleapis.com/"],
   "background": {
     "service_worker": "background.bundle.js",
     "type": "module"
@@ -33,7 +27,11 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["assets/injector.js", "assets/css/summary.css", "assets/md_rendering_test.json"],
+      "resources": [
+        "assets/injector.js",
+        "assets/css/summary.css",
+        "assets/md_rendering_test.json"
+      ],
       "matches": ["*://www.youtube.com/*"]
     }
   ]
