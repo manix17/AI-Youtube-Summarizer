@@ -3,7 +3,7 @@
   "name": "AI YouTube Summarizer",
   "version": "1.0",
   "description": "Summarizes YouTube videos using AI by reading the transcript.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
   "options_page": "options.html",
   "host_permissions": ["https://generativelanguage.googleapis.com/"],
   "background": {
