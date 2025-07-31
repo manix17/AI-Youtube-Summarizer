@@ -21,11 +21,6 @@
       "@assets/*": ["assets/*"]
     }
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "tests"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "tests"]
 }

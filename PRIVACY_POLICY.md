@@ -12,7 +12,7 @@ By using the Extension, you agree to the collection and use of information in ac
 
 To provide our service, we need to process certain data. We are committed to data minimization and only collect what is necessary for the Extension to function.
 
-#### Data We Collect:
+### Data We Collect
 
 - **User-Provided API Keys:** The Extension requires you to provide your own API key for the AI service you choose (e.g., OpenAI, Google Gemini, Anthropic). This key is stored locally on your device and is used solely to authenticate with the AI service on your behalf.
 - **YouTube Video Content:**
@@ -21,7 +21,7 @@ To provide our service, we need to process certain data. We are committed to dat
     This information is collected only when you activate the summarization feature and is sent to the AI service to generate the summary.
 - **User Configuration:** We store your selected AI platform, model preferences, and any custom prompts you configure on your device only,
 
-#### Data We DO NOT Collect:
+### Data We DO NOT Collect
 
 We are committed to your privacy and **do not** collect, store, or transmit any of the following:
 
