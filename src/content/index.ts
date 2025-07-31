@@ -37,7 +37,19 @@ function injectSummarizeButton(): void {
     closeButton.addEventListener("click", () => {
       summaryContainer.style.display = "none";
     });
-    summaryContainer.appendChild(closeButton);
+
+    const copyButton = document.createElement("button");
+    copyButton.id = "copy-summary-btn";
+    copyButton.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M15 1H4c-1.1 0-2 .9-2 2v14h2V3h11V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h10v14z"></path></svg>';
+    copyButton.classList.add("copy-summary-btn");
+    copyButton.addEventListener("click", handleCopyToClipboard);
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.classList.add("summary-button-container");
+    buttonContainer.appendChild(copyButton);
+    buttonContainer.appendChild(closeButton);
+    summaryContainer.appendChild(buttonContainer);
 
     const summaryContent = document.createElement("div");
     summaryContent.id = "summary-content";
@@ -51,6 +63,50 @@ function injectSummarizeButton(): void {
     summaryContainer.addEventListener("click", handleTimestampClick);
 
     injectCss("assets/css/summary.css");
+  }
+}
+
+/**
+ * Handles the click event for the copy to clipboard button.
+ */
+function handleCopyToClipboard(): void {
+  const summaryContent =
+    document.querySelector<HTMLElement>(".markdown-content");
+  if (summaryContent) {
+    // Create a temporary div to hold the HTML content
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = summaryContent.innerHTML;
+    tempDiv.style.position = "absolute";
+    tempDiv.style.left = "-9999px";
+    document.body.appendChild(tempDiv);
+
+    // Select the content of the temporary div
+    const range = document.createRange();
+    range.selectNode(tempDiv);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    try {
+      // Copy the selected content to the clipboard
+      document.execCommand("copy");
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+
+    // Clean up the temporary div and selection
+    document.body.removeChild(tempDiv);
+    selection?.removeAllRanges();
+
+    const copyButton = document.getElementById(
+      "copy-summary-btn"
+    ) as HTMLButtonElement;
+    copyButton.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>';
+    setTimeout(() => {
+      copyButton.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M15 1H4c-1.1 0-2 .9-2 2v14h2V3h11V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h10v14z"></path></svg>';
+    }, 2000);
   }
 }
 

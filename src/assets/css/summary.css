@@ -10,9 +10,6 @@
 }
 
 .close-summary-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
   background-color: transparent;
   border: none;
   border-radius: 50%;
@@ -32,7 +29,37 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 
+.copy-summary-btn {
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #606060;
+  transition: background-color 0.2s;
+  padding: 0;
+  z-index: 10;
+}
+
+.copy-summary-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.summary-button-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
 #summary-container {
+  position: relative;
   border: 1px solid #e2e8f0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   border-radius: 8px;
