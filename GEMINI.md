@@ -6,7 +6,7 @@ This file configures the project for use with Gemini Code CLI, providing context
 
 **Project Name**: YouTube Summarizer Chrome Extension  
 **Type**: Browser Extension (Chrome)  
-**Language**: JavaScript/TypeScript  
+**Language**: TypeScript
 **Purpose**: AI-powered summarization of YouTube videos  
 **Status**: Development/Production Ready
 
@@ -15,35 +15,40 @@ This file configures the project for use with Gemini Code CLI, providing context
 ```plain
 youtube-summarizer-extension/
 ├── src/
-│   ├── background/          # Service worker scripts
-│   │   ├── background.js    # Main background script
-│   │   └── api-service.js   # AI API integration
-│   ├── content/             # Content scripts for YouTube
-│   │   ├── content.js       # Main content script
-│   │   ├── ui-injector.js   # UI component injection
-│   │   └── video-parser.js  # Video data extraction
-│   ├── popup/               # Extension popup interface
-│   │   ├── popup.html       # Popup HTML structure
-│   │   ├── popup.js         # Popup logic
-│   │   └── popup.css        # Popup styling
-│   ├── options/             # Settings/options page
-│   │   ├── options.html     # Options page HTML
-│   │   ├── options.js       # Options page logic
-│   │   └── options.css      # Options page styling
-│   ├── utils/               # Shared utilities
-│   │   ├── storage.js       # Chrome storage helpers
-│   │   ├── messaging.js     # Inter-component communication
-│   │   └── constants.js     # App constants
-│   └── assets/              # Static assets
-│       ├── icons/           # Extension icons
-│       ├── images/          # UI images
-│       └── styles/          # Shared CSS
-├── manifest.json            # Extension manifest
-├── build/                   # Built/compiled files
-├── tests/                   # Test files
-├── docs/                    # Documentation
-├── package.json             # Dependencies
-└── webpack.config.js        # Build configuration
+│   ├── types.ts
+│   ├── assets/
+│   │   ├── platform_configs.json
+│   │   ├── prompts.json
+│   │   ├── css/
+│   │   │   └── summary.css
+│   │   └── images/
+│   │       ├── icon128.png
+│   │       ├── icon16.png
+│   │       └── icon48.png
+│   ├── background/
+│   │   └── index.ts
+│   ├── content/
+│   │   ├── index.ts
+│   │   └── injector.ts
+│   ├── options/
+│   │   ├── index.ts
+│   │   └── options.html
+│   ├── popup/
+│   │   ├── index.ts
+│   │   └── popup.html
+│   └── utils/
+│       ├── api_tester.ts
+│       ├── api.ts
+│       └── dom_parser.ts
+├── manifest.json
+├── build/
+├── tests/
+│   ├── dom_parser.test.ts
+│   └── md_rendering_test.json
+├── docs/
+│   └── HELP.md
+├── package.json
+└── webpack.config.js
 ```
 
 ## Core Technologies
@@ -123,8 +128,8 @@ youtube-summarizer-extension/
 
 ### API Integration
 
-1. Add API configuration to utils/constants.js
-2. Implement API calls in background/api-service.js
+1. Add API configuration to `src/utils/api.ts`
+2. Implement API calls in `src/background/index.ts`
 3. Handle responses and errors appropriately
 4. Update UI to reflect API status and results
 5. Test with different API response scenarios
@@ -249,6 +254,6 @@ When working on this project:
 
 ---
 
-_Last Updated: [Current Date]_  
+_Last Updated: 1 Aug 2025_  
 _Gemini Code CLI Compatible: Yes_  
-_Project Version: [Current Version]_
+_Project Version: 1.0.0_

@@ -9,6 +9,7 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "outDir": "./build",
     "baseUrl": "./src",
