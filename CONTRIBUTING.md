@@ -4,7 +4,7 @@ First off, thank you for considering contributing! This document provides guidel
 
 ## Development Setup
 
-This project uses `webpack` to bundle and build the extension. You'll need Node.js and npm installed.
+This project is written in **TypeScript** and uses `webpack` to bundle and build the extension. You'll need Node.js and npm installed.
 
 ### 1. Installation
 Clone the repository and install the dependencies:

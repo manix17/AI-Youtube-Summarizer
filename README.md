@@ -155,7 +155,7 @@ The basic workflow is:
 4.  Load the `build/` directory as an unpacked extension in Chrome.
 
 ### Technology Stack
-*   Vanilla JavaScript (ES6 Modules)
+*   TypeScript
 *   HTML5 / CSS3
 *   Webpack for bundling
 *   Jest for testing
@@ -183,7 +183,7 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 *   **Google Generative AI:** Powers the summarization feature.
 
 ### Privacy Policy
-You can view our full privacy policy [here]([LINK_TO_PRIVACY_POLICY.MD]).
+You can view our full privacy policy [here](PRIVACY_POLICY.md).
 <!-- It's a good practice to create a PRIVACY_POLICY.md file. -->
 
 ---
