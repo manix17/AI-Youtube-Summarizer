@@ -348,13 +348,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const currentProfileData = profiles[currentProfile];
+
     profiles[profileId] = {
+      ...currentProfileData,
       name: profileName,
-      platform: "gemini",
-      model: "gemini-1.5-flash",
-      apiKey: "",
-      systemPrompt: DEFAULT_PROMPTS.systemPrompt,
-      userPrompt: DEFAULT_PROMPTS.userPrompt,
     };
 
     profileModal.classList.remove("show");
