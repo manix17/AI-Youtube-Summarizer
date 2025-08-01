@@ -201,13 +201,18 @@ export async function generateSummary(
   videoDuration: string,
   channelName: string
 ): Promise<string> {
-  const { platform, model, apiKey, systemPrompt, userPrompt } = profile;
+  const { platform, model, apiKey, presets, currentPreset } = profile;
+  const preset = presets[currentPreset];
+  if (!preset) {
+    throw new Error(`Selected prompt preset "${currentPreset}" not found.`);
+  }
+  const { system_prompt: systemPrompt, user_prompt: userPrompt } = preset;
 
   let finalUserPrompt = userPrompt
-    .replace("{transcript}", transcript)
-    .replace("{video_title}", videoTitle)
-    .replace("{video_duration}", videoDuration)
-    .replace("{channel_name}", channelName);
+    .replace("{TRANSCRIPT}", transcript)
+    .replace("{VIDEO_TITLE}", videoTitle)
+    .replace("{VIDEO_DURATION}", videoDuration)
+    .replace("{CHANNEL_NAME}", channelName);
 
   const apiConfig = getApiConfig(platform, model);
   let apiUrl = apiConfig.url;

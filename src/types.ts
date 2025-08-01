@@ -57,8 +57,8 @@ export interface Profile {
   platform: Platform;
   model: string;
   apiKey: string;
-  systemPrompt: string;
-  userPrompt: string;
+  presets: Record<string, PromptPreset>;
+  currentPreset: string;
 }
 
 // --- Options Page Specific Types ---
@@ -66,6 +66,19 @@ export interface PlatformConfig {
   name: string;
   className: string;
   models: { value: string; label: string }[];
+}
+
+export interface PromptPreset {
+  name: string;
+  system_prompt: string;
+  user_prompt: string;
+  isDefault?: boolean;
+}
+
+export interface PromptPresets {
+  presets: {
+    [key: string]: PromptPreset;
+  };
 }
 
 export interface PlatformConfigs {
