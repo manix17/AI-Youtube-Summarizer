@@ -91,21 +91,51 @@ async function handleSummarize(
 
   try {
     const { profileId, presetId } = request.payload;
+
+    // 1. Load default prompts
+    const promptsRes = await fetch(chrome.runtime.getURL("assets/prompts.json"));
+    const defaultPrompts = await promptsRes.json();
+
+    // 2. Load the user's lean profile from storage
     const profileKey = `profile_${profileId}`;
-    const data = (await chrome.storage.sync.get(profileKey)) as {
+    const storageData = (await chrome.storage.sync.get(profileKey)) as {
       [key: string]: any;
     };
+    const userProfile = storageData[profileKey];
 
-    const profile = data[profileKey];
-    if (!profile || !profile.apiKey) {
+    if (!userProfile || !userProfile.apiKey) {
       throw new Error(`API key for profile "${profileId}" is missing.`);
     }
 
-    // Manually set the current preset for the generateSummary function
-    profile.currentPreset = presetId;
+    // 3. Reconstruct the full profile
+    const fullPresets = JSON.parse(JSON.stringify(defaultPrompts.presets));
+    for (const key in fullPresets) {
+      fullPresets[key].isDefault = true;
+      if (
+        userProfile.presets &&
+        userProfile.presets[key] &&
+        userProfile.presets[key].isDefault
+      ) {
+        Object.assign(fullPresets[key], userProfile.presets[key]);
+      }
+    }
+    if (userProfile.presets) {
+      for (const key in userProfile.presets) {
+        if (!userProfile.presets[key].isDefault) {
+          fullPresets[key] = userProfile.presets[key];
+        }
+      }
+    }
 
+    const fullProfile = {
+      ...userProfile,
+      presets: fullPresets,
+      currentPreset: presetId, // Set the preset selected by the user
+    };
+
+    // 4. Generate the summary with the full profile
     const summary = await generateSummary(
-      profile,
+      fullProfile,
       request.payload.transcript,
       request.payload.videoTitle,
       request.payload.videoDuration,

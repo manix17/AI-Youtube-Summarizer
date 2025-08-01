@@ -1,6 +1,10 @@
 // src/content/index.ts
 
 import { convertToHTML } from "../utils/dom_parser";
+import {
+  getProgressiveLoadingMessage,
+  getContextualLoadingMessage,
+} from "../utils/loading_messages";
 import type {
   VideoMetadata,
   PlayerResponse,
@@ -78,8 +82,9 @@ function injectSummarizeUI(): void {
     button.addEventListener("click", handleSummarizeClick);
     summaryContainer.addEventListener("click", handleTimestampClick);
 
-    initialize(); // Changed from loadProfiles()
+    initialize();
     profileSelect.addEventListener("change", handleProfileChange);
+    presetSelect.addEventListener("change", handlePresetChange);
 
     injectCss("assets/css/summary.css");
     setupDarkModeObserver();
@@ -97,8 +102,7 @@ function setupDarkModeObserver(): void {
     for (const mutation of mutationsList) {
       if (mutation.type === "attributes" && mutation.attributeName === "dark") {
         const isDarkMode = targetNode.hasAttribute("dark");
-        const summaryContainer =
-          document.getElementById("summary-container");
+        const summaryContainer = document.getElementById("summary-container");
         if (summaryContainer) {
           summaryContainer.classList.toggle("dark", isDarkMode);
         }
@@ -196,6 +200,7 @@ function handleTimestampClick(e: MouseEvent): void {
 let profiles: Record<string, any> = {};
 let defaultPrompts: any = {};
 let currentProfileId: string = "default";
+let loadingInterval: number | null = null;
 
 async function initialize() {
   try {
@@ -241,9 +246,7 @@ async function loadProfiles() {
     profiles = {};
     for (const profileId in storedProfiles) {
       const userProfile = storedProfiles[profileId];
-      const fullPresets = JSON.parse(
-        JSON.stringify(defaultPrompts.presets)
-      );
+      const fullPresets = JSON.parse(JSON.stringify(defaultPrompts.presets));
 
       for (const key in fullPresets) {
         fullPresets[key].isDefault = true;
@@ -290,6 +293,10 @@ function handleProfileChange() {
     "preset-select"
   ) as HTMLSelectElement;
   currentProfileId = profileSelect.value;
+
+  // Save the newly selected profile as the current one
+  chrome.storage.sync.set({ currentProfile: currentProfileId });
+
   const profile = profiles[currentProfileId];
 
   if (profile && profile.presets) {
@@ -303,6 +310,23 @@ function handleProfileChange() {
     }
     presetSelect.value = profile.currentPreset;
   }
+}
+
+function handlePresetChange() {
+  const presetSelect = document.getElementById(
+    "preset-select"
+  ) as HTMLSelectElement;
+  const selectedPresetId = presetSelect.value;
+
+  // Update the currentPreset value for the active profile in storage
+  const profileKey = `profile_${currentProfileId}`;
+  chrome.storage.sync.get(profileKey, (data) => {
+    if (data[profileKey]) {
+      const profile = data[profileKey];
+      profile.currentPreset = selectedPresetId;
+      chrome.storage.sync.set({ [profileKey]: profile });
+    }
+  });
 }
 
 /**
@@ -323,7 +347,21 @@ async function handleSummarizeClick(): Promise<void> {
   button.innerText = "⏳ Summarizing...";
   button.disabled = true;
   summaryContainer.style.display = "block";
-  updateSummaryContent("<i>Getting transcript...</i>");
+
+  const metadata = getVideoMetadata();
+  const initialMessage = getContextualLoadingMessage(
+    metadata.videoTitle,
+    metadata.channelName
+  );
+  updateSummaryContent(initialMessage);
+
+  // Start loading messages
+  const startTime = Date.now();
+  if (loadingInterval) clearInterval(loadingInterval);
+  loadingInterval = window.setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    updateSummaryContent(getProgressiveLoadingMessage(elapsed));
+  }, 4000);
 
   try {
     const transcript = await getTranscript();
@@ -354,6 +392,7 @@ async function handleSummarizeClick(): Promise<void> {
  * @param {SummarizeResponseMessage} response - The response object from the background script.
  */
 function handleResponse(response: SummarizeResponseMessage): void {
+  if (loadingInterval) clearInterval(loadingInterval);
   const button = document.getElementById("summarize-btn") as HTMLButtonElement;
 
   console.log("handleResponse: ", response, chrome.runtime.lastError);
@@ -382,6 +421,7 @@ function handleResponse(response: SummarizeResponseMessage): void {
  * @param {Error} error - The error object.
  */
 function handleError(error: Error): void {
+  if (loadingInterval) clearInterval(loadingInterval);
   updateSummaryContent(
     `<p style="color: red;"><b>Error:</b> ${error.message}</p>`
   );
@@ -418,7 +458,6 @@ async function getTranscript(): Promise<string> {
       "API transcript method failed, falling back to DOM scraping:",
       (error as Error).message
     );
-    updateSummaryContent("<i>API method failed. Trying fallback...</i>");
   }
   // If API method fails or returns empty, try the DOM fallback
   return getTranscriptFromDOM();
@@ -592,17 +631,45 @@ function getPlayerResponse(): Promise<PlayerResponse> {
 
 // --- 4. Initialization ---
 
+let currentVideoId: string | null = null;
+
+function resetAndInjectUI() {
+  const videoId = new URLSearchParams(window.location.search).get("v");
+  if (!videoId) {
+    // Not a video page, do nothing.
+    return;
+  }
+
+  const uiContainer = document.getElementById("summarize-ui-container");
+
+  if (videoId !== currentVideoId) {
+    // This is a new video page.
+    currentVideoId = videoId;
+
+    // Remove old UI if it exists from a previous page.
+    if (uiContainer) {
+      uiContainer.remove();
+    }
+    const summaryContainer = document.getElementById("summary-container");
+    if (summaryContainer) {
+      summaryContainer.remove();
+    }
+
+    // Inject fresh UI.
+    injectSummarizeUI();
+  } else {
+    // This is the same video page.
+    // Check if the UI is missing and needs to be re-injected.
+    if (!uiContainer && document.querySelector("#below")) {
+      injectSummarizeUI();
+    }
+  }
+}
+
 /**
  * Use a MutationObserver to detect when navigation to a new video page occurs.
  */
-const observer = new MutationObserver(() => {
-  if (
-    document.querySelector("#below") &&
-    !document.getElementById("summarize-ui-container")
-  ) {
-    injectSummarizeUI();
-  }
-});
+const observer = new MutationObserver(resetAndInjectUI);
 
 observer.observe(document.body, {
   childList: true,
@@ -610,4 +677,12 @@ observer.observe(document.body, {
 });
 
 // Initial run on page load
-injectSummarizeUI();
+resetAndInjectUI();
+
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "GET_VIDEO_METADATA") {
+    const metadata = getVideoMetadata();
+    sendResponse({ payload: metadata });
+  }
+});
