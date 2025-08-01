@@ -63,6 +63,38 @@ function injectSummarizeButton(): void {
     summaryContainer.addEventListener("click", handleTimestampClick);
 
     injectCss("assets/css/summary.css");
+    setupDarkModeObserver();
+  }
+}
+
+/**
+ * Sets up a MutationObserver to watch for changes to YouTube's dark mode attribute.
+ */
+function setupDarkModeObserver(): void {
+  const targetNode = document.documentElement;
+  const config = { attributes: true, attributeFilter: ["dark"] };
+
+  const callback = (mutationsList: MutationRecord[]) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === "attributes" && mutation.attributeName === "dark") {
+        const isDarkMode = targetNode.hasAttribute("dark");
+        const summaryContainer =
+          document.getElementById("summary-container");
+        if (summaryContainer) {
+          summaryContainer.classList.toggle("dark", isDarkMode);
+        }
+      }
+    }
+  };
+
+  const observer = new MutationObserver(callback);
+  observer.observe(targetNode, config);
+
+  // Initial check
+  const isDarkMode = targetNode.hasAttribute("dark");
+  const summaryContainer = document.getElementById("summary-container");
+  if (summaryContainer) {
+    summaryContainer.classList.toggle("dark", isDarkMode);
   }
 }
 
