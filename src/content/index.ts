@@ -15,20 +15,37 @@ import type {
 /**
  * Injects the main "Summarize Video" button and summary container into the page.
  */
-function injectSummarizeButton(): void {
+function injectSummarizeUI(): void {
   const targetElement = document.querySelector<HTMLElement>("#below");
 
-  if (targetElement && !document.getElementById("summarize-btn")) {
+  if (targetElement && !document.getElementById("summarize-ui-container")) {
+    const uiContainer = document.createElement("div");
+    uiContainer.id = "summarize-ui-container";
+    uiContainer.classList.add("summarize-ui-container");
+
+    const profileSelect = document.createElement("select");
+    profileSelect.id = "profile-select";
+    profileSelect.classList.add("summary-select");
+
+    const presetSelect = document.createElement("select");
+    presetSelect.id = "preset-select";
+    presetSelect.classList.add("summary-select");
+
     const button = document.createElement("button");
-    button.innerText = "✨ Summarize Video";
+    button.innerText = "✨ Summarize";
     button.id = "summarize-btn";
     button.classList.add("summarize-btn");
+
+    uiContainer.appendChild(profileSelect);
+    uiContainer.appendChild(presetSelect);
+    uiContainer.appendChild(button);
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
     summaryContainer.classList.add("summary-container");
     summaryContainer.style.display = "none";
 
+    // ... (rest of the summary container setup is the same)
     const closeButton = document.createElement("button");
     closeButton.id = "close-summary-btn";
     closeButton.innerHTML =
@@ -56,11 +73,13 @@ function injectSummarizeButton(): void {
     summaryContainer.appendChild(summaryContent);
 
     targetElement.prepend(summaryContainer);
-    targetElement.prepend(button);
+    targetElement.prepend(uiContainer);
 
     button.addEventListener("click", handleSummarizeClick);
-
     summaryContainer.addEventListener("click", handleTimestampClick);
+
+    initialize(); // Changed from loadProfiles()
+    profileSelect.addEventListener("change", handleProfileChange);
 
     injectCss("assets/css/summary.css");
     setupDarkModeObserver();
@@ -174,6 +193,118 @@ function handleTimestampClick(e: MouseEvent): void {
 
 // --- 2. Summarization Logic ---
 
+let profiles: Record<string, any> = {};
+let defaultPrompts: any = {};
+let currentProfileId: string = "default";
+
+async function initialize() {
+  try {
+    const promptsRes = await fetch(
+      chrome.runtime.getURL("assets/prompts.json")
+    );
+    defaultPrompts = await promptsRes.json();
+    await loadProfiles();
+  } catch (error) {
+    console.error("Error initializing summarizer UI:", error);
+  }
+}
+
+async function loadProfiles() {
+  const profileSelect = document.getElementById(
+    "profile-select"
+  ) as HTMLSelectElement;
+
+  chrome.storage.sync.get(null, (data) => {
+    let storedProfiles: Record<string, any> = {};
+
+    if (data.profile_ids && data.profile_ids.length > 0) {
+      const profileIds = data.profile_ids;
+      for (const id of profileIds) {
+        if (data[`profile_${id}`]) {
+          storedProfiles[id] = data[`profile_${id}`];
+        }
+      }
+      currentProfileId = data.currentProfile || "default";
+    } else {
+      // No profiles in storage, so create a default one for the UI to use.
+      storedProfiles = {
+        default: {
+          name: "Default",
+          presets: {}, // This will be populated by the reconstruction logic below
+          currentPreset: "detailed",
+        },
+      };
+      currentProfileId = "default";
+    }
+
+    // Reconstruct full profiles by merging stored data with defaults
+    profiles = {};
+    for (const profileId in storedProfiles) {
+      const userProfile = storedProfiles[profileId];
+      const fullPresets = JSON.parse(
+        JSON.stringify(defaultPrompts.presets)
+      );
+
+      for (const key in fullPresets) {
+        fullPresets[key].isDefault = true;
+        if (
+          userProfile.presets &&
+          userProfile.presets[key] &&
+          userProfile.presets[key].isDefault
+        ) {
+          Object.assign(fullPresets[key], userProfile.presets[key]);
+        }
+      }
+
+      if (userProfile.presets) {
+        for (const key in userProfile.presets) {
+          if (!userProfile.presets[key].isDefault) {
+            fullPresets[key] = userProfile.presets[key];
+          }
+        }
+      }
+      profiles[profileId] = {
+        ...userProfile,
+        presets: fullPresets,
+      };
+    }
+
+    // Populate the UI now that profiles are guaranteed to exist
+    profileSelect.innerHTML = "";
+    for (const id in profiles) {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = profiles[id].name;
+      profileSelect.appendChild(option);
+    }
+    profileSelect.value = currentProfileId;
+    handleProfileChange();
+  });
+}
+
+function handleProfileChange() {
+  const profileSelect = document.getElementById(
+    "profile-select"
+  ) as HTMLSelectElement;
+  const presetSelect = document.getElementById(
+    "preset-select"
+  ) as HTMLSelectElement;
+  currentProfileId = profileSelect.value;
+  const profile = profiles[currentProfileId];
+
+  if (profile && profile.presets) {
+    presetSelect.innerHTML = "";
+    for (const presetId in profile.presets) {
+      const preset = profile.presets[presetId];
+      const option = document.createElement("option");
+      option.value = presetId;
+      option.textContent = preset.name;
+      presetSelect.appendChild(option);
+    }
+    presetSelect.value = profile.currentPreset;
+  }
+}
+
 /**
  * Main handler for the "Summarize" button click.
  */
@@ -182,6 +313,12 @@ async function handleSummarizeClick(): Promise<void> {
   const summaryContainer = document.getElementById(
     "summary-container"
   ) as HTMLDivElement;
+  const profileSelect = document.getElementById(
+    "profile-select"
+  ) as HTMLSelectElement;
+  const presetSelect = document.getElementById(
+    "preset-select"
+  ) as HTMLSelectElement;
 
   button.innerText = "⏳ Summarizing...";
   button.disabled = true;
@@ -200,6 +337,8 @@ async function handleSummarizeClick(): Promise<void> {
       type: "summarize",
       payload: {
         transcript: transcript,
+        profileId: profileSelect.value,
+        presetId: presetSelect.value,
         ...metadata,
       },
     };
@@ -459,9 +598,9 @@ function getPlayerResponse(): Promise<PlayerResponse> {
 const observer = new MutationObserver(() => {
   if (
     document.querySelector("#below") &&
-    !document.getElementById("summarize-btn")
+    !document.getElementById("summarize-ui-container")
   ) {
-    injectSummarizeButton();
+    injectSummarizeUI();
   }
 });
 
@@ -471,4 +610,4 @@ observer.observe(document.body, {
 });
 
 // Initial run on page load
-injectSummarizeButton();
+injectSummarizeUI();

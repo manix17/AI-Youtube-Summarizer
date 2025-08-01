@@ -30,7 +30,8 @@
       "resources": [
         "assets/injector.js",
         "assets/css/summary.css",
-        "assets/md_rendering_test.json"
+        "assets/md_rendering_test.json",
+        "assets/prompts.json"
       ],
       "matches": ["*://www.youtube.com/*"]
     }

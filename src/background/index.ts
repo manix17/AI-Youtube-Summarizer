@@ -90,21 +90,19 @@ async function handleSummarize(
   }
 
   try {
-    const data = (await chrome.storage.sync.get([
-      "profiles",
-      "currentProfile",
-    ])) as AppStorage;
+    const { profileId, presetId } = request.payload;
+    const profileKey = `profile_${profileId}`;
+    const data = (await chrome.storage.sync.get(profileKey)) as {
+      [key: string]: any;
+    };
 
-    if (!data.profiles || !data.currentProfile) {
-      throw new Error(
-        "No profiles found. Please configure the extension options."
-      );
-    }
-
-    const profile = data.profiles[data.currentProfile];
+    const profile = data[profileKey];
     if (!profile || !profile.apiKey) {
-      throw new Error(`API key for ${data.currentProfile} profile is missing.`);
+      throw new Error(`API key for profile "${profileId}" is missing.`);
     }
+
+    // Manually set the current preset for the generateSummary function
+    profile.currentPreset = presetId;
 
     const summary = await generateSummary(
       profile,

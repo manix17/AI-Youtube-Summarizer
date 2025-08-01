@@ -29,6 +29,8 @@ export interface TestApiKeyPayload {
 
 export interface SummarizePayload extends VideoMetadata {
   transcript: string;
+  profileId: string;
+  presetId: string;
 }
 
 // Specific Message Types

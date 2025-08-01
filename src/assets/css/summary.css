@@ -1,3 +1,18 @@
+.summarize-ui-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.summary-select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  font-size: 14px;
+}
+
 .summarize-btn {
   background-color: #007bff;
   color: white;

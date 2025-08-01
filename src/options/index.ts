@@ -329,8 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     profile.presets[presetId] = {
       name: presetName,
-      system_prompt: "New custom system prompt.",
-      user_prompt: "New custom user prompt.",
+      system_prompt: "",
+      user_prompt: "",
       isDefault: false,
     };
     profile.currentPreset = presetId;
@@ -659,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function saveSettings(): void {
-    const dataToSave: { [key:string]: any } = {
+    const dataToSave: { [key: string]: any } = {
       currentProfile: currentProfileId,
       profile_ids: Object.keys(profiles),
     };
@@ -672,10 +672,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chrome.storage.sync.set(dataToSave, () => {
       if (chrome.runtime.lastError) {
-        console.error(
-          "Save settings error:",
-          chrome.runtime.lastError.message
-        );
+        console.error("Save settings error:", chrome.runtime.lastError.message);
         showStatus(
           `Error saving settings: ${chrome.runtime.lastError.message}`,
           "error"
