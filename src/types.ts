@@ -31,6 +31,7 @@ export interface SummarizePayload extends VideoMetadata {
   transcript: string;
   profileId: string;
   presetId: string;
+  language: string;
 }
 
 // Specific Message Types

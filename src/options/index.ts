@@ -19,9 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
     default: {
       name: "Default",
       platform: "gemini",
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       apiKey: "",
       presets: {},
+      language: "English",
       currentPreset: "detailed",
     },
   };
@@ -94,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ) as HTMLSpanElement;
   const languageSelect = document.getElementById(
     "language-select"
-    ) as HTMLSelectElement;
+  ) as HTMLSelectElement;
 
   // Preset Modal Elements
   const presetModal = document.getElementById("preset-modal") as HTMLDivElement;
@@ -603,9 +604,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     profiles[profileId] = {
       name: profileName,
-      platform: "gemini",
-      model: "gemini-1.5-flash",
-      apiKey: "",
+      platform: profiles.default.platform,
+      model: profiles.default.model,
+      apiKey: profiles.default.apiKey,
       language: "English",
       presets: newPresets,
       currentPreset: "detailed",
@@ -749,7 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
             default: {
               name: "Default",
               platform: "gemini",
-              model: "gemini-1.5-flash",
+              model: "gemini-2.5-flash",
               apiKey: "",
               language: "English",
               presets: {},
