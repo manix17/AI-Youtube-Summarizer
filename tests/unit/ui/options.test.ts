@@ -23,22 +23,25 @@ describe("Options UI", () => {
 
     // Mock storage response
     mockChrome.storage.sync.get.mockImplementation((keys, callback) => {
+      const data = {
+        currentProfile: 'default',
+        profile_ids: ['default'],
+        profile_default: {
+          name: 'Default',
+          platform: 'gemini',
+          model: 'gemini-2.5-flash',
+          apiKey: '',
+          language: 'English',
+          presets: {},
+          currentPreset: 'detailed',
+        },
+        ...storageData,
+      };
+      
       if (callback) {
-        callback({
-          currentProfile: 'default',
-          profile_ids: ['default'],
-          profile_default: {
-            name: 'Default',
-            platform: 'gemini',
-            model: 'gemini-2.5-flash',
-            apiKey: '',
-            language: 'English',
-            presets: {},
-            currentPreset: 'detailed',
-          },
-          ...storageData,
-        });
+        callback(data);
       }
+      return Promise.resolve(data);
     });
 
     // Wait for potential async initialization

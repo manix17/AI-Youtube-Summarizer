@@ -108,7 +108,7 @@ describe("Extension Integration", () => {
       document.body.innerHTML = optionsHTML;
 
       mockChrome.storage.sync.get.mockImplementation((keys, callback) => {
-        callback({
+        const data = {
           currentProfile: 'default',
           profile_ids: ['default'],
           profile_default: {
@@ -120,7 +120,12 @@ describe("Extension Integration", () => {
             presets: {},
             currentPreset: 'detailed',
           },
-        });
+        };
+        
+        if (callback) {
+          callback(data);
+        }
+        return Promise.resolve(data);
       });
 
       const platformSelect = document.getElementById('platform-select') as HTMLSelectElement;

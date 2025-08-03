@@ -15,13 +15,18 @@ export const createMockChrome = () => ({
   storage: {
     sync: {
       get: jest.fn((keys, callback) => {
+        // Support both callback and Promise API
         if (callback) {
           callback({});
+        } else {
+          return Promise.resolve({});
         }
       }),
       set: jest.fn((data, callback) => {
         if (callback) {
           callback();
+        } else {
+          return Promise.resolve();
         }
       }),
       remove: jest.fn(),
