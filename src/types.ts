@@ -59,6 +59,7 @@ export interface Profile {
   platform: Platform;
   model: string;
   apiKey: string;
+  language: string;
   presets: Record<string, PromptPreset>;
   currentPreset: string;
 }
@@ -74,6 +75,7 @@ export interface PromptPreset {
   name: string;
   system_prompt: string;
   user_prompt: string;
+  temperature: number;
   isDefault?: boolean;
 }
 
@@ -107,6 +109,7 @@ export interface OpenAIMessage {
 export interface OpenAIRequest {
   model: string;
   messages: OpenAIMessage[];
+  temperature?: number;
 }
 export interface OpenAIResponse {
   choices: { message: { content: string } }[];
@@ -122,6 +125,7 @@ export interface AnthropicRequest {
   system: string;
   messages: AnthropicMessage[];
   max_tokens: number;
+  temperature?: number;
 }
 export interface AnthropicResponse {
   content: { text: string }[];
@@ -137,6 +141,9 @@ export interface GeminiContent {
 }
 export interface GeminiRequest {
   contents: GeminiContent[];
+  generationConfig?: {
+    temperature?: number;
+  };
 }
 export interface GeminiResponse {
   candidates: { content: { parts: { text: string }[] } }[];

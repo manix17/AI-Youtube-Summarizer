@@ -139,7 +139,8 @@ async function handleSummarize(
       request.payload.transcript,
       request.payload.videoTitle,
       request.payload.videoDuration,
-      request.payload.channelName
+      request.payload.channelName,
+      request.payload.language
     );
 
     sendResponse({ type: "summarizeResponse", payload: { summary } });

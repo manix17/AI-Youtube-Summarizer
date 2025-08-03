@@ -46,7 +46,8 @@ function buildRequestPayload(
   platform: Platform,
   model: string,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  temperature?: number
 ): ApiRequestPayload {
   switch (platform) {
     case "openai":
@@ -56,6 +57,7 @@ function buildRequestPayload(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        temperature: temperature,
       } as OpenAIRequest;
     case "anthropic":
       return {
@@ -63,6 +65,7 @@ function buildRequestPayload(
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
         max_tokens: 4096,
+        temperature: temperature,
       } as AnthropicRequest;
     case "gemini":
       return {
@@ -72,6 +75,9 @@ function buildRequestPayload(
             parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
           },
         ],
+        generationConfig: {
+          temperature: temperature,
+        },
       } as GeminiRequest;
     default:
       throw new Error(`Unsupported platform: ${platform}`);
@@ -199,7 +205,8 @@ export async function generateSummary(
   transcript: string,
   videoTitle: string,
   videoDuration: string,
-  channelName: string
+  channelName: string,
+  language: string
 ): Promise<string> {
   const { platform, model, apiKey, presets, currentPreset } = profile;
   const preset = presets[currentPreset];
@@ -212,7 +219,8 @@ export async function generateSummary(
     .replace("{VIDEO_TRANSCRIPT}", transcript)
     .replace("{VIDEO_TITLE}", videoTitle)
     .replace("{VIDEO_DURATION}", videoDuration)
-    .replace("{CHANNEL_NAME}", channelName);
+    .replace("{CHANNEL_NAME}", channelName)
+    .replace("{TARGET_LANGUAGE}", language);
 
   const apiConfig = getApiConfig(platform, model);
   let apiUrl = apiConfig.url;
@@ -224,7 +232,8 @@ export async function generateSummary(
     platform,
     model,
     systemPrompt,
-    finalUserPrompt
+    finalUserPrompt,
+    preset.temperature
   );
   const headers = buildRequestHeaders(platform, apiKey);
 

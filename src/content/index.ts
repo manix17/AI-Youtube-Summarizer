@@ -35,6 +35,10 @@ function injectSummarizeUI(): void {
     presetSelect.id = "preset-select";
     presetSelect.classList.add("summary-select");
 
+    const languageSelect = document.createElement("select");
+    languageSelect.id = "language-select";
+    languageSelect.classList.add("summary-select");
+
     const button = document.createElement("button");
     button.innerText = "✨ Summarize";
     button.id = "summarize-btn";
@@ -42,6 +46,7 @@ function injectSummarizeUI(): void {
 
     uiContainer.appendChild(profileSelect);
     uiContainer.appendChild(presetSelect);
+    uiContainer.appendChild(languageSelect);
     uiContainer.appendChild(button);
 
     const summaryContainer = document.createElement("div");
@@ -61,13 +66,22 @@ function injectSummarizeUI(): void {
 
     const copyButton = document.createElement("button");
     copyButton.id = "copy-summary-btn";
+    copyButton.title = "Copy to Clipboard";
     copyButton.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M15 1H4c-1.1 0-2 .9-2 2v14h2V3h11V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h10v14z"></path></svg>';
     copyButton.classList.add("copy-summary-btn");
     copyButton.addEventListener("click", handleCopyToClipboard);
 
+    const downloadButton = document.createElement("button");
+    downloadButton.id = "download-summary-btn";
+    downloadButton.title = "Download Summary";
+    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>`;
+    downloadButton.classList.add("download-summary-btn");
+    downloadButton.addEventListener("click", handleDownloadSummary);
+
     const buttonContainer = document.createElement("div");
     buttonContainer.classList.add("summary-button-container");
+    buttonContainer.appendChild(downloadButton);
     buttonContainer.appendChild(copyButton);
     buttonContainer.appendChild(closeButton);
     summaryContainer.appendChild(buttonContainer);
@@ -85,6 +99,7 @@ function injectSummarizeUI(): void {
     initialize();
     profileSelect.addEventListener("change", handleProfileChange);
     presetSelect.addEventListener("change", handlePresetChange);
+    languageSelect.addEventListener("change", handleLanguageChange);
 
     injectCss("assets/css/summary.css");
     setupDarkModeObserver();
@@ -118,6 +133,25 @@ function setupDarkModeObserver(): void {
   const summaryContainer = document.getElementById("summary-container");
   if (summaryContainer) {
     summaryContainer.classList.toggle("dark", isDarkMode);
+  }
+}
+
+function handleDownloadSummary(): void {
+  const summaryContent =
+    document.querySelector<HTMLElement>(".markdown-content");
+  const videoTitle = getVideoMetadata().videoTitle;
+  if (summaryContent) {
+    const blob = new Blob([summaryContent.innerText], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${videoTitle}_summary.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -292,6 +326,9 @@ function handleProfileChange() {
   const presetSelect = document.getElementById(
     "preset-select"
   ) as HTMLSelectElement;
+  const languageSelect = document.getElementById(
+    "language-select"
+    ) as HTMLSelectElement;
   currentProfileId = profileSelect.value;
 
   // Save the newly selected profile as the current one
@@ -309,6 +346,17 @@ function handleProfileChange() {
       presetSelect.appendChild(option);
     }
     presetSelect.value = profile.currentPreset;
+  }
+  if (profile) {
+    languageSelect.innerHTML = "";
+    const languages = ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Korean", "Italian", "Portuguese", "Russian"];
+    for (const language of languages) {
+        const option = document.createElement("option");
+        option.value = language;
+        option.textContent = language;
+        languageSelect.appendChild(option);
+    }
+    languageSelect.value = profile.language || "English";
   }
 }
 
@@ -329,6 +377,22 @@ function handlePresetChange() {
   });
 }
 
+function handleLanguageChange() {
+    const languageSelect = document.getElementById(
+        "language-select"
+    ) as HTMLSelectElement;
+    const selectedLanguage = languageSelect.value;
+
+    const profileKey = `profile_${currentProfileId}`;
+    chrome.storage.sync.get(profileKey, (data) => {
+        if (data[profileKey]) {
+            const profile = data[profileKey];
+            profile.language = selectedLanguage;
+            chrome.storage.sync.set({ [profileKey]: profile });
+        }
+    });
+}
+
 /**
  * Main handler for the "Summarize" button click.
  */
@@ -343,6 +407,9 @@ async function handleSummarizeClick(): Promise<void> {
   const presetSelect = document.getElementById(
     "preset-select"
   ) as HTMLSelectElement;
+    const languageSelect = document.getElementById(
+    "language-select"
+    ) as HTMLSelectElement;
 
   button.innerText = "⏳ Summarizing...";
   button.disabled = true;
@@ -377,6 +444,7 @@ async function handleSummarizeClick(): Promise<void> {
         transcript: transcript,
         profileId: profileSelect.value,
         presetId: presetSelect.value,
+        language: languageSelect.value,
         ...metadata,
       },
     };

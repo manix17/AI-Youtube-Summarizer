@@ -86,6 +86,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetPromptsBtn = document.getElementById(
     "reset-prompts-btn"
   ) as HTMLButtonElement;
+  const temperatureSlider = document.getElementById(
+    "temperature-slider"
+  ) as HTMLInputElement;
+  const temperatureValue = document.getElementById(
+    "temperature-value"
+  ) as HTMLSpanElement;
+  const languageSelect = document.getElementById(
+    "language-select"
+    ) as HTMLSelectElement;
 
   // Preset Modal Elements
   const presetModal = document.getElementById("preset-modal") as HTMLDivElement;
@@ -174,6 +183,14 @@ document.addEventListener("DOMContentLoaded", () => {
       "input",
       debounce(saveCurrentProfile, 500)
     );
+    temperatureSlider?.addEventListener("input", () => {
+      if (temperatureValue) {
+        temperatureValue.textContent = parseFloat(
+          temperatureSlider.value
+        ).toFixed(1);
+      }
+      debounce(saveCurrentProfile, 500)();
+    });
 
     profileModal?.addEventListener("click", (e) => {
       if (e.target === profileModal) closeModal();
@@ -189,6 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Final safety net to save changes before the page unloads
     window.addEventListener("pagehide", saveCurrentProfile);
+    languageSelect?.addEventListener("change", saveCurrentProfile);
   }
 
   function closeModal(): void {
@@ -296,19 +314,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const presetKey = profile.currentPreset;
     const preset = profile.presets[presetKey];
-    const isDefaultProfile = currentProfileId === "default";
 
     if (preset) {
       systemPromptTextarea.value = preset.system_prompt;
       userPromptTextarea.value = preset.user_prompt;
+      temperatureSlider.value = preset.temperature.toString();
+      temperatureValue.textContent = preset.temperature.toFixed(1);
 
-      // Disable if it's a default preset OR if it's the default profile
-      const isReadOnly = !!preset.isDefault || isDefaultProfile;
-      deletePresetBtn.disabled = isReadOnly;
-      renamePresetBtn.disabled = isReadOnly;
+      const isDefaultPreset = !!preset.isDefault;
 
-      // Reset is only for default presets, but not in the default profile (as it's all read-only)
-      resetPromptsBtn.disabled = !preset.isDefault || isDefaultProfile;
+      // Default presets cannot be deleted or renamed.
+      deletePresetBtn.disabled = isDefaultPreset;
+      renamePresetBtn.disabled = isDefaultPreset;
+
+      // The reset button is only for default presets.
+      resetPromptsBtn.disabled = !isDefaultPreset;
+
+      // All fields are always editable.
+      systemPromptTextarea.readOnly = false;
+      userPromptTextarea.readOnly = false;
+      temperatureSlider.disabled = false;
     }
   }
 
@@ -331,6 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
       name: presetName,
       system_prompt: "",
       user_prompt: "",
+      temperature: 0.7,
       isDefault: false,
     };
     profile.currentPreset = presetId;
@@ -410,6 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const preset = profile.presets[presetKey];
       preset.system_prompt = defaultPreset.system_prompt;
       preset.user_prompt = defaultPreset.user_prompt;
+      preset.temperature = defaultPreset.temperature;
       loadPresetData();
       saveSettings();
       closePresetModal();
@@ -530,11 +557,10 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePlatformBadge();
     apiKeyInput.value = profile.apiKey;
     settingsSubtitle.textContent = `Now editing profile: "${profile.name}"`;
+    languageSelect.value = profile.language || "English";
 
     populatePresetDropdown();
     loadPresetData();
-
-    addPresetBtn.disabled = currentProfileId === "default";
 
     // Ensure models are loaded for the current profile
     if (profile.apiKey) {
@@ -570,9 +596,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const newPresets = JSON.parse(JSON.stringify(defaultPrompts.presets));
+    for (const key in newPresets) {
+      newPresets[key].isDefault = true;
+    }
+
     profiles[profileId] = {
-      ...profiles.default,
       name: profileName,
+      platform: "gemini",
+      model: "gemini-1.5-flash",
+      apiKey: "",
+      language: "English",
+      presets: newPresets,
+      currentPreset: "detailed",
     };
 
     closeModal();
@@ -614,12 +650,14 @@ document.addEventListener("DOMContentLoaded", () => {
     profile.platform = platformSelect.value as Platform;
     profile.model = modelSelect.value;
     profile.apiKey = apiKeyInput.value.trim();
+    profile.language = languageSelect.value;
     profile.currentPreset = presetSelect.value;
 
     const currentPresetData = profile.presets[profile.currentPreset];
     if (currentPresetData) {
       currentPresetData.system_prompt = systemPromptTextarea.value;
       currentPresetData.user_prompt = userPromptTextarea.value;
+      currentPresetData.temperature = parseFloat(temperatureSlider.value);
     }
 
     saveSettings();
@@ -640,13 +678,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (
           defaultPreset &&
           (preset.system_prompt !== defaultPreset.system_prompt ||
-            preset.user_prompt !== defaultPreset.user_prompt)
+            preset.user_prompt !== defaultPreset.user_prompt ||
+            preset.temperature !== defaultPreset.temperature)
         ) {
           // If modified, save only the fields that can be modified.
           savableProfile.presets[presetKey] = {
             name: preset.name, // Keep name for consistency
             system_prompt: preset.system_prompt,
             user_prompt: preset.user_prompt,
+            temperature: preset.temperature,
             isDefault: true,
           };
         }
@@ -711,6 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
               platform: "gemini",
               model: "gemini-1.5-flash",
               apiKey: "",
+              language: "English",
               presets: {},
               currentPreset: "detailed",
             },
