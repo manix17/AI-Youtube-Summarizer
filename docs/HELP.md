@@ -46,6 +46,12 @@ Before you can summarize, you need to provide your own API key.
 4.  **Test and Save:** Click the **"Test"** button to verify your key. If it's successful, models will load in the dropdown. Select a model and click **"Save Settings"**.
 5.  You are now ready to summarize!
 
+### Generating API Keys
+
+Need help finding your API key? Refer to our detailed guide for step-by-step instructions for each platform.
+
+**➡️ [How to Generate API Keys](./API_KEYS.md)**
+
 ### How to Know It's Working
 
 - When you visit a YouTube video page (`youtube.com/watch?...`), a **"✨ Summarize Video"** button will appear below the video player and above the description.
