@@ -1,0 +1,40 @@
+// tests/helpers/chrome-mocks.ts
+
+export const createMockChrome = () => ({
+  runtime: {
+    onMessage: {
+      addListener: jest.fn(),
+    },
+    sendMessage: jest.fn((message, callback) => {
+      if (callback) {
+        callback({ success: true, models: [{ name: "model-1", displayName: "Model 1" }] });
+      }
+    }),
+    getURL: jest.fn((path) => `chrome-extension://mock-extension-id/${path}`),
+  },
+  storage: {
+    sync: {
+      get: jest.fn((keys, callback) => {
+        if (callback) {
+          callback({});
+        }
+      }),
+      set: jest.fn((data, callback) => {
+        if (callback) {
+          callback();
+        }
+      }),
+      remove: jest.fn(),
+    },
+  },
+  tabs: {
+    query: jest.fn(),
+    create: jest.fn(),
+  },
+});
+
+export const setupChromeMocks = () => {
+  const mockChrome = createMockChrome();
+  (global as any).chrome = mockChrome;
+  return mockChrome;
+};

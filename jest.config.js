@@ -1,6 +1,6 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: "ts-jest",
+  preset: "jest-puppeteer",
   testEnvironment: "node",
   transform: {
     "^.+.tsx?$": "ts-jest",
@@ -13,4 +13,15 @@ module.exports = {
     "^@options/(.*)$": "<rootDir>/src/options/$1",
     "^@assets/(.*)$": "<rootDir>/src/assets/$1",
   },
+  testMatch: [
+    "<rootDir>/tests/**/*.test.ts"
+  ],
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/assets/**",
+  ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "html"],
+  setupFilesAfterEnv: ["<rootDir>/tests/helpers/setup.ts"],
 };
