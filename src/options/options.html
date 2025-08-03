@@ -599,6 +599,39 @@
         opacity: 0.6;
       }
 
+      .variables-note {
+        font-size: 0.85rem;
+        color: #4a5568;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        line-height: 1.6;
+      }
+
+      .variables-note ul {
+        list-style-position: inside;
+        padding-left: 8px;
+      }
+
+      .variables-note li {
+        margin-bottom: 8px;
+      }
+
+      .variables-note code {
+        background-color: #e2e8f0;
+        color: #2d3748;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: "Monaco", "Menlo", monospace;
+      }
+
+      .prompt-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
       @media (max-width: 768px) {
         .main-content {
           flex-direction: column;
@@ -725,9 +758,34 @@
                 placeholder="Define how the user request is formatted..."
               ></textarea>
             </div>
-            <button class="btn btn-secondary" id="reset-prompts-btn">
-              Reset Current Preset
-            </button>
+
+            <div class="variables-note">
+              <b>Available Variables:</b>
+              <ul>
+                <li>
+                  <code>{VIDEO_TITLE}</code> - Inserts the full title of the
+                  YouTube video.
+                </li>
+                <li>
+                  <code>{CHANNEL_NAME}</code> - Inserts the name of the
+                  YouTube channel.
+                </li>
+                <li>
+                  <code>{VIDEO_DURATION}</code> - Inserts the duration of the
+                  video (e.g., "10:34").
+                </li>
+                <li>
+                  <code>{VIDEO_TRANSCRIPT}</code> - Inserts the full, raw
+                  transcript of the video.
+                </li>
+              </ul>
+            </div>
+
+            <div class="prompt-actions">
+              <button class="btn btn-secondary" id="reset-prompts-btn">
+                Reset Current Preset
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -209,7 +209,7 @@ export async function generateSummary(
   const { system_prompt: systemPrompt, user_prompt: userPrompt } = preset;
 
   let finalUserPrompt = userPrompt
-    .replace("{TRANSCRIPT}", transcript)
+    .replace("{VIDEO_TRANSCRIPT}", transcript)
     .replace("{VIDEO_TITLE}", videoTitle)
     .replace("{VIDEO_DURATION}", videoDuration)
     .replace("{CHANNEL_NAME}", channelName);
