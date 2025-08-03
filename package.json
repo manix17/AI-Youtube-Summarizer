@@ -9,6 +9,7 @@
   "scripts": {
     "test": "jest",
     "build": "webpack --mode=production --config webpack.config.js",
+    "lint": "tsc --noEmit",
     "dev": "webpack --mode=development --watch --config webpack.config.js"
   },
   "keywords": [],
