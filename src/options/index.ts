@@ -9,6 +9,15 @@ import type {
   PromptPresets,
   PromptPreset,
 } from "../types";
+import {
+  getTokenUsage,
+  getStorageInfo,
+  resetTokenUsage,
+  formatLargeNumber,
+  formatBytes,
+  getStorageUsagePercentage,
+  getLargestProfiles,
+} from "../utils/usage_tracker";
 
 document.addEventListener("DOMContentLoaded", () => {
   let defaultPrompts: PromptPresets = { presets: {} };
@@ -121,6 +130,17 @@ document.addEventListener("DOMContentLoaded", () => {
     "preset-close-modal"
   ) as HTMLButtonElement;
 
+  // Usage Statistics Elements
+  const totalTokensElement = document.getElementById("total-tokens") as HTMLElement;
+  const totalRequestsElement = document.getElementById("total-requests") as HTMLElement;
+  const resetTokensBtn = document.getElementById("reset-tokens-btn") as HTMLButtonElement;
+  const storageProgressElement = document.getElementById("storage-progress") as HTMLElement;
+  const storageUsedElement = document.getElementById("storage-used") as HTMLElement;
+  const storageTotalElement = document.getElementById("storage-total") as HTMLElement;
+  const storagePercentageElement = document.getElementById("storage-percentage") as HTMLElement;
+  const platformStatsElement = document.getElementById("platform-stats") as HTMLElement;
+  const profileSizeListElement = document.getElementById("profile-size-list") as HTMLElement;
+
   let presetModalMode: "add" | "rename" | "delete" | "reset" | null = null;
   let presetToModify: string | null = null;
 
@@ -136,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setupEventListeners();
       renderProfiles();
       loadProfileData();
+      await updateUsageStatistics();
     } catch (error) {
       console.error("Error initializing settings:", error);
       showStatus("Failed to load configurations.", "error");
@@ -208,6 +229,113 @@ document.addEventListener("DOMContentLoaded", () => {
     // Final safety net to save changes before the page unloads
     window.addEventListener("pagehide", saveCurrentProfile);
     languageSelect?.addEventListener("change", saveCurrentProfile);
+    resetTokensBtn?.addEventListener("click", handleResetTokens);
+  }
+
+  // Usage Statistics Functions
+  async function updateUsageStatistics(): Promise<void> {
+    try {
+      const [tokenUsage, storageInfo] = await Promise.all([
+        getTokenUsage(),
+        getStorageInfo()
+      ]);
+
+      // Update token usage display
+      totalTokensElement.textContent = formatLargeNumber(tokenUsage.totalTokens);
+      totalRequestsElement.textContent = `${tokenUsage.totalRequests.toLocaleString()} requests`;
+
+      // Update storage usage display
+      const usagePercentage = getStorageUsagePercentage(storageInfo);
+      storageUsedElement.textContent = formatBytes(storageInfo.totalSize);
+      storageTotalElement.textContent = formatBytes(storageInfo.maxSize);
+      storagePercentageElement.textContent = `${usagePercentage}%`;
+      
+      // Update storage progress bar
+      storageProgressElement.style.width = `${usagePercentage}%`;
+      storageProgressElement.className = 'storage-progress';
+      if (usagePercentage > 90) {
+        storageProgressElement.classList.add('danger');
+      } else if (usagePercentage > 70) {
+        storageProgressElement.classList.add('warning');
+      }
+
+      // Update platform usage stats
+      updatePlatformStats(tokenUsage);
+
+      // Update profile sizes
+      updateProfileSizes(storageInfo);
+    } catch (error) {
+      console.error('Error updating usage statistics:', error);
+    }
+  }
+
+  function updatePlatformStats(tokenUsage: any): void {
+    const platformStats = tokenUsage.platformUsage || {};
+    
+    if (Object.keys(platformStats).length === 0) {
+      platformStatsElement.innerHTML = '<p style="color: #6b7280; font-style: italic; text-align: center; padding: 20px;">No usage data yet</p>';
+      return;
+    }
+
+    const platformElements = Object.entries(platformStats)
+      .sort(([,a], [,b]) => (b as any).tokens - (a as any).tokens)
+      .map(([platform, stats]: [string, any]) => {
+        const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+        const iconClass = platform.toLowerCase();
+        
+        return `
+          <div class="platform-stat">
+            <div class="platform-name">
+              <div class="platform-icon-small ${iconClass}">
+                ${platform === 'openai' ? '🤖' : platform === 'anthropic' ? '🧠' : '💎'}
+              </div>
+              ${platformName}
+            </div>
+            <div class="platform-usage-info">
+              <div class="platform-tokens">${formatLargeNumber(stats.tokens)}</div>
+              <div class="platform-requests">${stats.requests.toLocaleString()} requests</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    platformStatsElement.innerHTML = platformElements;
+  }
+
+  function updateProfileSizes(storageInfo: any): void {
+    const largestProfiles = getLargestProfiles(storageInfo, 5);
+    
+    if (largestProfiles.length === 0) {
+      profileSizeListElement.innerHTML = '<p style="color: #6b7280; font-style: italic; text-align: center; padding: 20px;">No profiles found</p>';
+      return;
+    }
+
+    const profileElements = largestProfiles.map(({ profileId, size }) => {
+      const profileName = profiles[profileId]?.name || profileId;
+      return `
+        <div class="profile-size-item">
+          <div class="profile-name">${profileName}</div>
+          <div class="profile-size">${formatBytes(size)}</div>
+        </div>
+      `;
+    }).join('');
+
+    profileSizeListElement.innerHTML = profileElements;
+  }
+
+  async function handleResetTokens(): Promise<void> {
+    const confirmed = confirm('Are you sure you want to reset all token usage statistics? This action cannot be undone.');
+    
+    if (confirmed) {
+      try {
+        await resetTokenUsage();
+        await updateUsageStatistics();
+        showStatus('Token usage statistics have been reset.', 'success');
+      } catch (error) {
+        console.error('Error resetting token usage:', error);
+        showStatus('Failed to reset token usage statistics.', 'error');
+      }
+    }
   }
 
   function closeModal(): void {

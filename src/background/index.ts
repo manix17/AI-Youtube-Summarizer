@@ -2,6 +2,7 @@
 
 import * as apiTester from "../utils/api_tester";
 import { generateSummary } from "../utils/api";
+import { trackSummarization } from "../utils/usage_tracker";
 import type {
   BackgroundRequest,
   TestApiKeyRequest,
@@ -142,6 +143,22 @@ async function handleSummarize(
       request.payload.channelName,
       request.payload.language
     );
+
+    // 5. Track token usage for this summarization
+    try {
+      const preset = fullProfile.presets[fullProfile.currentPreset];
+      if (preset) {
+        await trackSummarization(
+          fullProfile.platform,
+          preset.system_prompt,
+          preset.user_prompt,
+          request.payload.transcript,
+          summary
+        );
+      }
+    } catch (trackingError) {
+      console.warn("Failed to track token usage:", trackingError);
+    }
 
     sendResponse({ type: "summarizeResponse", payload: { summary } });
   } catch (error) {
