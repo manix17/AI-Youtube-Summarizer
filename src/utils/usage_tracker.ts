@@ -152,12 +152,20 @@ export async function getStorageInfo(): Promise<StorageInfo> {
         const itemSize = new Blob([JSON.stringify(value)]).size;
         storageInfo.totalSize += itemSize;
         
-        if (key.startsWith('profile_')) {
+        if (key.startsWith('profile_') && key !== 'profile_ids') {
           const profileId = key.replace('profile_', '');
-          storageInfo.profiles[profileId] = itemSize;
+          // Add to existing size if it exists (for metadata keys added to default profile)
+          storageInfo.profiles[profileId] = (storageInfo.profiles[profileId] || 0) + itemSize;
           profilesSize += itemSize;
         } else if (key === TOKEN_USAGE_KEY) {
           usageSize += itemSize;
+        } else if (key === 'profile_ids' || key === 'currentProfile') {
+          // Include metadata keys in the default profile size
+          if (!storageInfo.profiles['default']) {
+            storageInfo.profiles['default'] = 0;
+          }
+          storageInfo.profiles['default'] += itemSize;
+          profilesSize += itemSize;
         } else {
           otherSize += itemSize;
         }

@@ -187,6 +187,40 @@ describe("Usage Tracker Utils", () => {
       expect(storageInfo.usage).toBeDefined();
       expect(storageInfo.other).toBeGreaterThan(0);
     });
+
+    it("should include metadata keys in default profile size", async () => {
+      const mockStorageData = {
+        profile_default: { name: "Default", platform: "gemini" },
+        profile_ids: ["default"],
+        currentProfile: "default",
+        token_usage_stats: { totalTokens: 500 },
+        other_data: "some other data",
+      };
+
+      mockChrome.storage.sync.get.mockImplementation((keys, callback) => {
+        if (callback) {
+          callback(mockStorageData);
+        } else {
+          return Promise.resolve(mockStorageData);
+        }
+      });
+
+      const storageInfo = await getStorageInfo();
+
+      // Verify that default profile includes metadata size
+      expect(storageInfo.profiles).toHaveProperty("default");
+      
+      // The default profile size should include profile_ids and currentProfile
+      const profileDefaultSize = new Blob([JSON.stringify(mockStorageData.profile_default)]).size;
+      const profileIdsSize = new Blob([JSON.stringify(mockStorageData.profile_ids)]).size;
+      const currentProfileSize = new Blob([JSON.stringify(mockStorageData.currentProfile)]).size;
+      const expectedDefaultSize = profileDefaultSize + profileIdsSize + currentProfileSize;
+
+      expect(storageInfo.profiles.default).toBe(expectedDefaultSize);
+
+      // Also verify that metadata keys are not counted in other data
+      expect(storageInfo.other).toBe(new Blob([JSON.stringify(mockStorageData.other_data)]).size);
+    });
   });
 
   describe("getStorageUsagePercentage", () => {

@@ -839,7 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    chrome.storage.sync.set(dataToSave, () => {
+    chrome.storage.sync.set(dataToSave, async () => {
       if (chrome.runtime.lastError) {
         console.error("Save settings error:", chrome.runtime.lastError.message);
         showStatus(
@@ -848,6 +848,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       } else {
         console.log("Settings saved successfully.");
+        // Update storage usage statistics after saving
+        await updateUsageStatistics();
       }
     });
   }
