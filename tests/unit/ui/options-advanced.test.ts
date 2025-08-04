@@ -17,6 +17,48 @@ describe("Options Page Advanced Features (SET-005, SET-006)", () => {
     jest.clearAllMocks();
   });
 
+  describe("Default Profile Creation", () => {
+    it("should create default profile when storage is cleared", async () => {
+      // Mock empty storage (cleared state)
+      mockChrome.storage.sync.get.mockImplementation((keys: any, callback: any) => {
+        callback({}); // Empty storage
+        return Promise.resolve({});
+      });
+
+      // Mock successful storage save
+      mockChrome.storage.sync.set.mockImplementation((data: any, callback?: any) => {
+        if (callback) callback();
+        return Promise.resolve();
+      });
+
+      const optionsHTML = loadHtmlFile('options/options.html');
+      document.body.innerHTML = optionsHTML;
+
+      // Load the options script
+      await import('../../../src/options/index');
+      
+      // Wait for initialization
+      await waitFor(1000); // Wait 1 second for initialization
+
+      // Verify that saveSettings was called to save the default profile
+      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentProfile: 'default',
+          profile_ids: ['default'],
+          profile_default: expect.objectContaining({
+            name: 'Default',
+            platform: 'gemini',
+            model: 'gemini-2.5-flash',
+            apiKey: '',
+            language: 'English',
+            currentPreset: 'detailed'
+          })
+        }),
+        expect.any(Function)
+      );
+    });
+  });
+
   const initializeOptionsPage = async (storageData: any = {}) => {
     const optionsHTML = loadHtmlFile('options/options.html');
     document.body.innerHTML = optionsHTML;

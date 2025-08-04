@@ -886,6 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
           };
           currentProfileId = "default";
+          needsMigration = true; // Ensure default profile gets saved
         }
 
         // --- Core Logic Change: Reconstruct profiles ---
