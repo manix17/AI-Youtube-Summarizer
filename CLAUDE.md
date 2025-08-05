@@ -28,9 +28,9 @@ This is a Manifest V3 Chrome extension that uses AI to summarize YouTube videos 
 
 **Extension Structure (5 main entry points):**
 - `background/` - Service worker handling API calls and message routing
-- `content/` - Content script injected into YouTube pages for UI and transcript extraction
-- `popup/` - Extension popup interface with status indicators
-- `options/` - Options page for profile and API key management
+- `content/` - Content script injected into YouTube pages for UI and transcript extraction with dark theme support
+- `popup/` - Extension popup interface with status indicators and support section
+- `options/` - Options page for profile and API key management with storage optimization
 - `injector.ts` - Injected script to access YouTube's player data
 
 **Key Data Flow:**
@@ -56,7 +56,18 @@ User configurations are stored as "profiles" containing:
 - Language preferences
 - Temperature settings
 
-Profiles use a "lean storage" approach - only user modifications are stored, with defaults loaded from `assets/prompts.json` at runtime.
+**Storage Architecture:**
+Profiles use an optimized "dual storage" approach:
+- **Profile metadata**: Stored under `profile_{profileId}` keys with minimal data (name, platform, model, apiKey, language, currentPreset)
+- **Individual presets**: Stored separately under `profile_{profileId}_{presetId}` keys to avoid Chrome storage quota issues
+- **Default presets**: Loaded from `assets/prompts.json` and merged with user modifications at runtime
+- **Dirty tracking**: Session-based tracking prevents unnecessary storage writes during page reload/navigation
+
+**Storage Optimization Features:**
+- Line ending normalization to prevent false differences between stored and DOM content
+- Initialization flags prevent premature saves during profile loading
+- Storage quota error handling with user-friendly messaging
+- Preset reconstruction merges defaults with user customizations efficiently
 
 ### Transcript Extraction (Dual Method)
 1. **API Method** (preferred): Accesses YouTube's internal player data via injected script to get caption track URLs
@@ -218,8 +229,10 @@ export class BookmarkManager {
 - All Chrome API calls use promises/async-await
 - Message passing between extension components uses typed interfaces
 - Error handling includes user-friendly messages and fallback behaviors  
-- UI components adapt to YouTube's dark/light mode
-- Storage operations are batched to avoid quota limits
+- UI components seamlessly adapt to YouTube's dark/light mode via MutationObserver
+- Storage operations are optimized with dirty tracking and batch operations to avoid quota limits
+- Session-based state management prevents unnecessary Chrome storage writes
+- Line ending normalization ensures cross-platform consistency
 
 ### Security and Performance Considerations
 - **Manifest V3 Compliance**: Uses service workers instead of background pages
@@ -235,6 +248,27 @@ export class BookmarkManager {
 - UI injection waits for DOM elements to load and handles YouTube's dynamic content
 - Cross-component communication via Chrome's message passing API with typed interfaces
 - Storage uses Chrome's sync storage for user settings persistence across devices
+
+### User Experience Features
+
+**Dark Theme Integration:**
+- Automatic detection of YouTube's dark/light mode via `MutationObserver`
+- Seamless styling that matches YouTube's native design system
+- Applied to both summary containers and UI controls (selects, buttons)
+- CSS classes dynamically toggled based on `html[dark]` attribute
+
+**Extension Popup Interface:**
+- Modern glassmorphism design with gradient backgrounds and animated particles
+- Real-time status indicators showing extension state and YouTube page detection
+- Integrated support section with attractive heart icon linking to Buy Me a Coffee
+- Optimized layout fitting all content without scrolling (550px height)
+- Smooth animations and hover effects throughout the interface
+
+**Storage Quota Management:**
+- Intelligent error handling for Chrome storage quota exceeded scenarios
+- User-friendly error messages with actionable guidance
+- Automatic storage usage tracking and optimization
+- Profile and preset data distributed across multiple storage keys to avoid limits
 
 ### Testing Patterns and Best Practices
 

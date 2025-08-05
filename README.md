@@ -28,10 +28,14 @@
 
 ## Features ✨
 
-- **Instant AI Summaries:** Get a summary of any YouTube video that has a transcript.
-- **Easy Access:** The summary appears directly on the YouTube video page for a seamless experience.
-- **API Key Integration:** Securely add your own API key via the options page.
-- **Customizable:** Configure the extension's settings to fit your needs.
+- **Multi-Platform AI Support:** Choose between Google Gemini, OpenAI GPT, and Anthropic Claude models
+- **Instant AI Summaries:** Get a summary of any YouTube video that has a transcript
+- **Seamless YouTube Integration:** Summary appears directly on the video page with dark theme support
+- **Profile Management:** Create multiple profiles with different AI providers and custom prompts
+- **Advanced Storage Optimization:** Efficient storage architecture with quota management
+- **Interactive Timestamps:** Click timestamps in summaries to jump to specific video moments
+- **Copy & Download:** Easy copy-to-clipboard and download summary features
+- **Buy Me a Coffee Integration:** Support development directly from the extension popup
 
 ---
 
@@ -73,10 +77,17 @@ You can install AI YouTube Summarizer in two ways:
 
 1.  **Set Your API Key:**
     - Right-click the extension icon in your toolbar and select "Options".
-    - Enter your Google AI API key and click "Save".
-2.  **Access the Extension:** Navigate to any YouTube video with a transcript.
-3.  **Get a Summary:** Click the **AI YouTube Summarizer** icon in your Chrome toolbar to open the popup, then click the "Summarize" button.
-4.  **View the Summary:** The summary will be injected directly into the YouTube page, typically below the video player.
+    - Choose your preferred AI provider (Google Gemini, OpenAI, or Anthropic Claude).
+    - Enter your API key, test it, and save your settings.
+2.  **Navigate to YouTube:** Go to any YouTube video with a transcript.
+3.  **Get a Summary:** Click the **"✨ Summarize"** button that appears below the video player.
+4.  **View the Summary:** The summary appears directly on the page with interactive timestamps.
+5.  **Copy or Download:** Use the built-in copy and download buttons to save your summary.
+
+### Quick Setup Guide
+- **Need API Keys?** Check our [API Keys Guide](docs/API_KEYS.md) for step-by-step instructions
+- **Want Custom Prompts?** See our [Custom Prompts Guide](docs/CUSTOM_PROMPTS.md)
+- **Need Help?** Visit our comprehensive [Help & Troubleshooting Guide](docs/HELP.md)
 
 ---
 
@@ -108,12 +119,16 @@ You can install AI YouTube Summarizer in two ways:
 
 We value your privacy and only request the permissions necessary for the extension to function.
 
-- **`activeTab`**: Allows the extension to run only when you click its icon, limiting its access to the tab you're currently viewing.
-- **`scripting`**: Needed to inject the summary content into the YouTube video page.
-- **`storage`**: Used to securely save your API key and other settings locally on your browser.
-- **`host_permissions`**: Access to `generativelanguage.googleapis.com` is required to communicate with the Google AI API for generating summaries.
+- **`activeTab`**: Allows the extension to access only the current YouTube tab when you use it
+- **`scripting`**: Needed to inject the summary interface into YouTube video pages
+- **`storage`**: Used to securely save your API keys, profiles, and settings locally in your browser
+- **`clipboardWrite`**: Enables the copy-to-clipboard feature for summaries
+- **`host_permissions`**: Access to AI service endpoints:
+  - `generativelanguage.googleapis.com` (Google Gemini)
+  - `api.openai.com` (OpenAI GPT)
+  - `api.anthropic.com` (Anthropic Claude)
 
-**Your privacy is our priority.** We do not collect, store, or transmit any of your personal data. The extension communicates directly with the Google AI service using the API key you provide.
+**Your privacy is our priority.** We do not collect, store, or transmit any of your personal data. The extension communicates directly with your chosen AI service using the API key you provide. All data is stored locally in your browser.
 
 ---
 
@@ -158,10 +173,12 @@ The basic workflow is:
 
 ### Technology Stack
 
-- TypeScript
-- HTML5 / CSS3
-- Webpack for bundling
-- Jest for testing
+- **TypeScript** - Type-safe development
+- **HTML5 / CSS3** - Modern web standards with dark theme support
+- **Webpack** - Module bundling and optimization
+- **Jest + Puppeteer** - Comprehensive testing suite (99 tests across 9 suites)
+- **Chrome Extension API** - Manifest V3 compliance
+- **Multi-Provider AI Integration** - Google Gemini, OpenAI, Anthropic Claude
 
 ---
 
@@ -186,7 +203,10 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 
 ### Third-Party Resources
 
-- **Google Generative AI:** Powers the summarization feature.
+- **Google Gemini AI** - Advanced AI model for summarization
+- **OpenAI GPT Models** - Powerful language models
+- **Anthropic Claude** - High-quality AI assistant
+- **Buy Me a Coffee** - Support platform integration
 
 ### Privacy Policy
 
