@@ -1,5 +1,6 @@
 import type {
   Profile,
+  StoredProfile,
   Platform,
   PlatformConfigs,
   Model,
@@ -143,8 +144,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let presetModalMode: "add" | "rename" | "delete" | "reset" | null = null;
   let presetToModify: string | null = null;
+  
+  // Track which presets have been modified in this session to avoid unnecessary storage operations
+  let modifiedPresets: Set<string> = new Set();
+  
+  // Flag to prevent automatic saves during initialization - start as true to prevent saves before init
+  let isInitializing = true;
 
   async function initialize(): Promise<void> {
+    // Clear the modifiedPresets set at the start of each session
+    modifiedPresets.clear();
+    
     try {
       const [platformRes, promptsRes] = await Promise.all([
         fetch(chrome.runtime.getURL("assets/platform_configs.json")),
@@ -157,9 +167,16 @@ document.addEventListener("DOMContentLoaded", () => {
       renderProfiles();
       loadProfileData();
       await updateUsageStatistics();
+      
+      // Clear the initializing flag after all initialization is complete
+      setTimeout(() => {
+        isInitializing = false;
+      }, 200);
     } catch (error) {
       console.error("Error initializing settings:", error);
       showStatus("Failed to load configurations.", "error");
+      // Clear the flag even if initialization fails
+      isInitializing = false;
     }
   }
   function setupEventListeners(): void {
@@ -432,9 +449,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function handlePresetChange(): void {
     const profile = profiles[currentProfileId];
     if (profile) {
+      // Set initializing flag to prevent saves during preset switching
+      isInitializing = true;
+      
       profile.currentPreset = presetSelect.value;
       loadPresetData();
       saveSettings();
+      
+      // Clear the initializing flag after preset switching is complete
+      setTimeout(() => {
+        isInitializing = false;
+      }, 50);
     }
   }
   function loadPresetData(): void {
@@ -506,7 +531,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Remove from in-memory profile
     delete profile.presets[presetKey];
+    
+    // Remove individual preset key from storage
+    const individualPresetKey = `profile_${currentProfileId}_${presetKey}`;
+    chrome.storage.sync.remove(individualPresetKey, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error deleting individual preset:", chrome.runtime.lastError.message);
+      } else {
+        console.log(`Deleted individual preset key: ${individualPresetKey}`);
+      }
+    });
+    
     profile.currentPreset = "detailed"; // Reset to a safe default
     populatePresetDropdown();
     loadPresetData();
@@ -538,10 +575,20 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Create new entry and delete old one
+    // Create new entry and delete old one in memory
     profile.presets[newPresetKey] = { ...oldPreset, name: newName };
     delete profile.presets[oldPresetKey];
     profile.currentPreset = newPresetKey;
+
+    // Handle storage keys: remove old key and let saveSettings create the new one
+    const oldIndividualPresetKey = `profile_${currentProfileId}_${oldPresetKey}`;
+    chrome.storage.sync.remove(oldIndividualPresetKey, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error deleting old individual preset key:", chrome.runtime.lastError.message);
+      } else {
+        console.log(`Deleted old individual preset key: ${oldIndividualPresetKey}`);
+      }
+    });
 
     populatePresetDropdown();
     loadPresetData();
@@ -566,6 +613,17 @@ document.addEventListener("DOMContentLoaded", () => {
       preset.system_prompt = defaultPreset.system_prompt;
       preset.user_prompt = defaultPreset.user_prompt;
       preset.temperature = defaultPreset.temperature;
+      
+      // Delete the individual preset key if it exists
+      const individualPresetKey = `profile_${currentProfileId}_${presetKey}`;
+      chrome.storage.sync.remove(individualPresetKey, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error deleting individual preset:", chrome.runtime.lastError.message);
+        } else {
+          console.log(`Deleted individual preset key: ${individualPresetKey}`);
+        }
+      });
+      
       loadPresetData();
       saveSettings();
       closePresetModal();
@@ -577,6 +635,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const platform = platformSelect.value as Platform;
     const config = platformConfigs[platform];
     const currentModel = profiles[currentProfileId].model;
+
+    // Temporarily remove the change event listener to prevent triggering saves
+    modelSelect.removeEventListener("change", saveCurrentProfile);
 
     modelSelect.innerHTML = "";
     modelSelect.disabled = false;
@@ -599,6 +660,8 @@ document.addEventListener("DOMContentLoaded", () => {
       modelSelect.innerHTML =
         '<option value="">-- No compatible models found --</option>';
       modelSelect.disabled = true;
+      // Re-add the event listener before returning
+      modelSelect.addEventListener("change", saveCurrentProfile);
       return;
     }
 
@@ -624,6 +687,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!modelSelect.value && modelSelect.options.length > 0) {
       modelSelect.selectedIndex = 0;
     }
+
+    // Re-add the event listener after setting the value
+    modelSelect.addEventListener("change", saveCurrentProfile);
   }
 
   function updatePlatformBadge(): void {
@@ -665,6 +731,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function switchProfile(profileId: string): void {
     if (currentProfileId === profileId) return;
     currentProfileId = profileId;
+    
+    // Set initializing flag to prevent saves during profile switching
+    isInitializing = true;
+    
     chrome.storage.sync.set({ currentProfile: currentProfileId }, () => {
       loadProfileData();
       renderProfiles();
@@ -675,6 +745,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (profiles[currentProfileId].apiKey) {
         testApiKey(true);
       }
+      
+      // Clear the initializing flag after profile switching is complete
+      setTimeout(() => {
+        isInitializing = false;
+      }, 100);
     });
   }
 
@@ -740,39 +815,67 @@ document.addEventListener("DOMContentLoaded", () => {
       currentPreset: "detailed",
     };
 
+    // Save the new profile immediately before switching to it
+    saveSettings();
+
     closeModal();
     renderProfiles();
     switchProfile(profileId);
     showStatus("Profile created successfully!", "success");
   }
 
+  // Batch cleanup function for preset keys
+  function cleanupPresetKeys(profileId: string, presetIds: string[]): void {
+    const keysToRemove = presetIds.map(id => `profile_${profileId}_${id}`);
+    chrome.storage.sync.remove(keysToRemove, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error cleaning up preset keys:", chrome.runtime.lastError.message);
+      } else {
+        console.log(`Cleaned up ${keysToRemove.length} preset keys for profile ${profileId}`);
+      }
+    });
+  }
+
   function deleteProfile(profileId: string): void {
     if (profileId === "default" || !profiles[profileId]) return;
+
+    // Collect preset IDs for cleanup
+    const presetIds = Object.keys(profiles[profileId].presets);
 
     // Remove from in-memory object
     delete profiles[profileId];
 
-    // Remove from storage
-    chrome.storage.sync.remove(`profile_${profileId}`, () => {
+    // Remove profile from storage and cleanup preset keys
+    const keysToRemove = [`profile_${profileId}`, ...presetIds.map(id => `profile_${profileId}_${id}`)];
+    chrome.storage.sync.remove(keysToRemove, async () => {
       if (chrome.runtime.lastError) {
         console.error(
           "Error deleting profile from storage:",
           chrome.runtime.lastError.message
         );
+      } else {
+        console.log(`Deleted profile ${profileId} and ${presetIds.length} preset keys`);
+        
+        // Update profile_ids list and current profile after successful deletion
+        if (currentProfileId === profileId) {
+          switchProfile("default"); // This will call saveSettings
+        } else {
+          saveSettings(); // We need to save the updated profile_ids list
+        }
+        
+        // Update storage usage statistics after successful deletion
+        await updateUsageStatistics();
       }
     });
-
-    if (currentProfileId === profileId) {
-      switchProfile("default"); // This will call saveSettings
-    } else {
-      saveSettings(); // We need to save the updated profile_ids list
-    }
 
     renderProfiles();
     showStatus("Profile deleted", "success");
   }
 
   function saveCurrentProfile(): void {
+    // Skip saving during initialization to prevent unnecessary storage writes
+    if (isInitializing) return;
+    
     const profile = profiles[currentProfileId];
     if (!profile) return;
 
@@ -784,59 +887,94 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const currentPresetData = profile.presets[profile.currentPreset];
     if (currentPresetData) {
-      currentPresetData.system_prompt = systemPromptTextarea.value;
-      currentPresetData.user_prompt = userPromptTextarea.value;
-      currentPresetData.temperature = parseFloat(temperatureSlider.value);
+      // Check if preset data has actually changed
+      const newSystemPrompt = systemPromptTextarea.value;
+      const newUserPrompt = userPromptTextarea.value;
+      const newTemperature = parseFloat(temperatureSlider.value);
+      
+      // Normalize line endings for comparison (textarea normalizes \r\n to \n)
+      const normalizeLineEndings = (text: string) => text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const storedSystemPrompt = normalizeLineEndings(currentPresetData.system_prompt || '');
+      const storedUserPrompt = normalizeLineEndings(currentPresetData.user_prompt || '');
+      
+      if (storedSystemPrompt !== newSystemPrompt ||
+          storedUserPrompt !== newUserPrompt ||
+          currentPresetData.temperature !== newTemperature) {
+        
+        // Only mark as modified if we're not initializing
+        if (!isInitializing) {
+          // Mark this preset as modified in this session
+          const presetKey = `${currentProfileId}_${profile.currentPreset}`;
+          modifiedPresets.add(presetKey);
+        }
+        
+        // Always update the preset data (this ensures the in-memory data stays in sync)
+        currentPresetData.system_prompt = newSystemPrompt;
+        currentPresetData.user_prompt = newUserPrompt;
+        currentPresetData.temperature = newTemperature;
+      }
     }
 
     saveSettings();
   }
 
-  function getSavableProfile(profile: Profile): Profile {
-    const savableProfile: Profile = {
+  function getSavableProfile(profile: Profile, profileId: string): StoredProfile {
+    const savableProfile: StoredProfile = {
       ...profile,
       presets: {}, // Start with an empty presets object
     };
 
+    // Only store preset references that exist, using dirty tracking for defaults
     for (const presetKey in profile.presets) {
       const preset = profile.presets[presetKey];
-
+      const trackingKey = `${profileId}_${presetKey}`;
+      
       if (preset.isDefault) {
-        const defaultPreset = defaultPrompts.presets[presetKey];
-        // Check if the user has modified the prompt text
-        if (
-          defaultPreset &&
-          (preset.system_prompt !== defaultPreset.system_prompt ||
-            preset.user_prompt !== defaultPreset.user_prompt ||
-            preset.temperature !== defaultPreset.temperature)
-        ) {
-          // If modified, save only the fields that can be modified.
-          savableProfile.presets[presetKey] = {
-            name: preset.name, // Keep name for consistency
-            system_prompt: preset.system_prompt,
-            user_prompt: preset.user_prompt,
-            temperature: preset.temperature,
-            isDefault: true,
-          };
+        // Only store reference if modified in this session (will be stored individually)
+        if (modifiedPresets.has(trackingKey)) {
+          // Just store minimal reference - data is stored separately
+          savableProfile.presets[presetKey] = { isDefault: true };
         }
+        // For unmodified defaults, don't store anything in profile
       } else {
-        // This is a custom preset, so save it completely.
-        savableProfile.presets[presetKey] = preset;
+        // Custom preset - store minimal reference
+        savableProfile.presets[presetKey] = { isDefault: false };
       }
     }
     return savableProfile;
   }
 
   function saveSettings(): void {
+    
     const dataToSave: { [key: string]: any } = {
       currentProfile: currentProfileId,
       profile_ids: Object.keys(profiles),
     };
 
+    // First, save all profiles
     for (const profileId in profiles) {
       dataToSave[`profile_${profileId}`] = getSavableProfile(
-        profiles[profileId]
+        profiles[profileId],
+        profileId
       );
+    }
+
+    // Then, save individual presets that have been modified in this session or are custom presets
+    for (const profileId in profiles) {
+      const profile = profiles[profileId];
+      for (const presetId in profile.presets) {
+        const preset = profile.presets[presetId];
+        const presetKey = `${profileId}_${presetId}`;
+        
+        // Only save individual presets if they are custom presets or have been modified in this session
+        if (!preset.isDefault) {
+          // This is a custom preset, always save it with its own key
+          dataToSave[`profile_${profileId}_${presetId}`] = preset;
+        } else if (modifiedPresets.has(presetKey)) {
+          // This is a default preset that has been modified in this session
+          dataToSave[`profile_${profileId}_${presetId}`] = preset;
+        }
+      }
     }
 
     chrome.storage.sync.set(dataToSave, async () => {
@@ -846,11 +984,29 @@ document.addEventListener("DOMContentLoaded", () => {
           `Error saving settings: ${chrome.runtime.lastError.message}`,
           "error"
         );
-      } else {
-        console.log("Settings saved successfully.");
-        // Update storage usage statistics after saving
-        await updateUsageStatistics();
+        return;
       }
+      
+      // Verify individual preset saves completed successfully
+      const failedSaves: string[] = [];
+      for (const key in dataToSave) {
+        if (key.includes('profile_') && key.includes('_') && key !== 'profile_ids') {
+          // This is an individual preset key, verify it was saved
+          chrome.storage.sync.get(key, (result) => {
+            if (!result[key]) {
+              failedSaves.push(key);
+              console.error(`Failed to save individual preset: ${key}`);
+            }
+          });
+        }
+      }
+      
+      if (failedSaves.length > 0) {
+        showStatus(`Warning: ${failedSaves.length} presets may not have saved correctly`, "error");
+      }
+      
+      // Update storage usage statistics after saving
+      await updateUsageStatistics();
     });
   }
 
@@ -858,14 +1014,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise((resolve) => {
       chrome.storage.sync.get(null, (data) => {
         let storedProfiles: Record<string, Profile> = {};
-        let needsMigration = false;
 
-        // Check for old monolithic 'profiles' object
-        if (data.profiles) {
-          storedProfiles = data.profiles;
-          currentProfileId = data.currentProfile || "default";
-          needsMigration = true;
-        } else if (data.profile_ids) {
+        if (data.profile_ids) {
           // New structure: profiles are stored individually
           const profileIds = data.profile_ids;
           for (const id of profileIds) {
@@ -888,7 +1038,6 @@ document.addEventListener("DOMContentLoaded", () => {
             },
           };
           currentProfileId = "default";
-          needsMigration = true; // Ensure default profile gets saved
         }
 
         // --- Core Logic Change: Reconstruct profiles ---
@@ -910,7 +1059,13 @@ document.addEventListener("DOMContentLoaded", () => {
               userProfile.presets[key] &&
               userProfile.presets[key].isDefault
             ) {
-              Object.assign(fullPresets[key], userProfile.presets[key]);
+              // Check if there's an individual preset stored
+              const individualPresetKey = `profile_${profileId}_${key}`;
+              if (data[individualPresetKey]) {
+                Object.assign(fullPresets[key], data[individualPresetKey]);
+              } else {
+                Object.assign(fullPresets[key], userProfile.presets[key]);
+              }
             }
           }
 
@@ -918,7 +1073,13 @@ document.addEventListener("DOMContentLoaded", () => {
           if (userProfile.presets) {
             for (const key in userProfile.presets) {
               if (!userProfile.presets[key].isDefault) {
-                fullPresets[key] = userProfile.presets[key];
+                // Check if there's an individual preset stored
+                const individualPresetKey = `profile_${profileId}_${key}`;
+                if (data[individualPresetKey]) {
+                  fullPresets[key] = data[individualPresetKey];
+                } else {
+                  fullPresets[key] = userProfile.presets[key];
+                }
               }
             }
           }
@@ -929,12 +1090,6 @@ document.addEventListener("DOMContentLoaded", () => {
             presets: fullPresets,
           };
         }
-
-        if (needsMigration) {
-          saveSettings(); // Save in the new, separated format
-          chrome.storage.sync.remove("profiles"); // Clean up old monolithic key
-        }
-
         resolve();
       });
     });
@@ -973,11 +1128,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (profile.model) {
           modelSelect.value = profile.model;
         }
-        saveCurrentProfile();
       } else if (response?.success) {
         if (!isSilent) showStatus("API key is valid!", "success");
         populateModelDropdown([]);
-        saveCurrentProfile();
       } else {
         if (!isSilent) showStatus("Unknown validation error", "error");
       }

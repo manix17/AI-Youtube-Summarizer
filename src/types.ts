@@ -65,6 +65,17 @@ export interface Profile {
   currentPreset: string;
 }
 
+// Profile stored in Chrome storage (with minimal preset references)
+export interface StoredProfile {
+  name: string;
+  platform: Platform;
+  model: string;
+  apiKey: string;
+  language: string;
+  presets: Record<string, PresetReference>;
+  currentPreset: string;
+}
+
 // --- Options Page Specific Types ---
 export interface PlatformConfig {
   name: string;
@@ -78,6 +89,11 @@ export interface PromptPreset {
   user_prompt: string;
   temperature: number;
   isDefault?: boolean;
+}
+
+// Minimal preset reference stored in profile (actual data stored separately)
+export interface PresetReference {
+  isDefault: boolean;
 }
 
 export interface PromptPresets {

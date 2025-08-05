@@ -153,10 +153,19 @@ export async function getStorageInfo(): Promise<StorageInfo> {
         storageInfo.totalSize += itemSize;
         
         if (key.startsWith('profile_') && key !== 'profile_ids') {
-          const profileId = key.replace('profile_', '');
-          // Add to existing size if it exists (for metadata keys added to default profile)
-          storageInfo.profiles[profileId] = (storageInfo.profiles[profileId] || 0) + itemSize;
-          profilesSize += itemSize;
+          // Check if this is an individual preset key (profile_${profileId}_${presetId})
+          const keyParts = key.split('_');
+          if (keyParts.length >= 3) {
+            // This is an individual preset key: profile_${profileId}_${presetId}
+            const profileId = keyParts[1]; // Extract profile ID (second part)
+            storageInfo.profiles[profileId] = (storageInfo.profiles[profileId] || 0) + itemSize;
+            profilesSize += itemSize;
+          } else {
+            // This is a main profile key: profile_${profileId}
+            const profileId = key.replace('profile_', '');
+            storageInfo.profiles[profileId] = (storageInfo.profiles[profileId] || 0) + itemSize;
+            profilesSize += itemSize;
+          }
         } else if (key === TOKEN_USAGE_KEY) {
           usageSize += itemSize;
         } else if (key === 'profile_ids' || key === 'currentProfile') {
