@@ -15,8 +15,10 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen, Ubuntu, Cantarell, sans-serif;
         width: 320px;
-        min-height: 400px;
+        height: 550px;
+        max-height: 550px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-attachment: fixed;
         color: white;
         overflow: hidden;
         position: relative;
@@ -87,31 +89,32 @@
       .container {
         position: relative;
         z-index: 1;
-        padding: 24px;
-        height: 100%;
+        padding: 22px 22px 16px 22px;
+        height: calc(100% - 16px);
         display: flex;
         flex-direction: column;
+        background: transparent;
       }
 
       .header {
         text-align: center;
-        margin-bottom: 24px;
+        margin-bottom: 18px;
         animation: slideDown 0.8s ease-out;
       }
 
       .logo {
-        width: 48px;
-        height: 48px;
-        margin: 0 auto 12px;
+        width: 42px;
+        height: 42px;
+        margin: 0 auto 10px;
         background: linear-gradient(135deg, #ff6b6b, #feca57);
-        border-radius: 12px;
+        border-radius: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 21px;
         font-weight: bold;
         color: white;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         animation: pulse 2s ease-in-out infinite;
       }
 
@@ -126,9 +129,9 @@
       }
 
       h1 {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
         background: linear-gradient(135deg, #fff, #e0e6ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -145,17 +148,16 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 14px;
         animation: slideUp 0.8s ease-out 0.2s both;
       }
 
       .instruction-card {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
-        margin-bottom: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 14px;
+        padding: 16px;
         transition: all 0.3s ease;
       }
 
@@ -178,8 +180,8 @@
       }
 
       .instruction-text {
-        font-size: 14px;
-        line-height: 1.5;
+        font-size: 13px;
+        line-height: 1.4;
         opacity: 0.95;
       }
 
@@ -214,7 +216,7 @@
       }
 
       .actions {
-        margin-top: auto;
+        margin-top: 16px;
         display: flex;
         gap: 12px;
       }
@@ -277,8 +279,8 @@
       .feature-list {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        margin-top: 12px;
+        gap: 6px;
+        margin-top: 8px;
       }
 
       .feature-item {
@@ -322,22 +324,115 @@
         }
       }
 
+      /* Support Section Styles */
+      .support-card {
+        background: linear-gradient(135deg, rgba(255, 87, 87, 0.15), rgba(255, 154, 0, 0.15));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 87, 87, 0.3);
+        border-radius: 14px;
+        padding: 14px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .support-card:hover {
+        background: linear-gradient(135deg, rgba(255, 87, 87, 0.25), rgba(255, 154, 0, 0.25));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(255, 87, 87, 0.2);
+        border-color: rgba(255, 87, 87, 0.5);
+      }
+
+      .support-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transition: left 0.6s;
+      }
+
+      .support-card:hover::before {
+        left: 100%;
+      }
+
+      .support-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .support-heart {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, #ff4757, #ff6b7a);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        animation: heartbeat 2s ease-in-out infinite;
+        box-shadow: 0 3px 8px rgba(255, 71, 87, 0.3);
+      }
+
+      @keyframes heartbeat {
+        0%, 50%, 100% {
+          transform: scale(1);
+        }
+        25%, 75% {
+          transform: scale(1.1);
+        }
+      }
+
+      .support-text {
+        flex: 1;
+      }
+
+      .support-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 1px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .support-subtitle {
+        font-size: 10px;
+        opacity: 0.85;
+        line-height: 1.2;
+      }
+
+      .support-arrow {
+        font-size: 16px;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+      }
+
+      .support-card:hover .support-arrow {
+        opacity: 1;
+        transform: translateX(2px);
+      }
+
       .version {
         text-align: center;
         font-size: 10px;
         opacity: 0.6;
-        margin-top: 12px;
+        margin-top: 10px;
       }
 
-      /* Responsive adjustments */
-      @media (max-height: 500px) {
-        .container {
-          padding: 16px;
-        }
-        .feature-list {
-          display: none;
-        }
-      }
+      /* Remove the responsive rule since we want it to fit in 500px */
     </style>
   </head>
   <body>
@@ -364,9 +459,7 @@
         <div class="instruction-card">
           <div class="instruction-icon">▶️</div>
           <div class="instruction-text">
-            Navigate to any YouTube video page and you'll see a "Summarize
-            Video" button below the video title. Click it to generate an AI
-            summary when transcripts are available!
+            Visit any YouTube video page and click the "Summarize Video" button below the video to generate AI summaries instantly!
           </div>
 
           <div class="feature-list">
@@ -382,6 +475,21 @@
               <div class="feature-icon">🎯</div>
               <span>Key insights extraction</span>
             </div>
+          </div>
+        </div>
+
+        <div class="support-card" id="support-btn">
+          <div class="support-content">
+            <div class="support-heart">❤️</div>
+            <div class="support-text">
+              <div class="support-title">
+                Love this extension? ☕
+              </div>
+              <div class="support-subtitle">
+                Support development & keep it free for everyone
+              </div>
+            </div>
+            <div class="support-arrow">→</div>
           </div>
         </div>
       </div>

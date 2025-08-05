@@ -3,6 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const optionsBtn = document.getElementById("options-btn");
   const helpBtn = document.getElementById("help-btn");
+  const supportBtn = document.getElementById("support-btn");
   const statusDot = document.querySelector<HTMLDivElement>(".status-dot");
   const statusText = document.querySelector<HTMLSpanElement>(
     ".status-indicator span"
@@ -30,6 +31,21 @@ document.addEventListener("DOMContentLoaded", () => {
       // Open help/documentation
       chrome.tabs.create({
         url: "https://github.com/manix17/AI-Youtube-Summarizer/blob/main/docs/HELP.md",
+      });
+    });
+  }
+
+  if (supportBtn) {
+    supportBtn.addEventListener("click", function () {
+      // Add a subtle click animation
+      (this as HTMLElement).style.transform = "scale(0.98)";
+      setTimeout(() => {
+        (this as HTMLElement).style.transform = "";
+      }, 150);
+
+      // Open Buy Me a Coffee page
+      chrome.tabs.create({
+        url: "https://buymeacoffee.com/manix17",
       });
     });
   }
