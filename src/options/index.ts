@@ -142,6 +142,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const platformStatsElement = document.getElementById("platform-stats") as HTMLElement;
   const profileSizeListElement = document.getElementById("profile-size-list") as HTMLElement;
 
+  // Help icon elements
+  const platformHelpIcon = document.getElementById("platform-help") as HTMLAnchorElement;
+  const promptsHelpIcon = document.getElementById("prompts-help") as HTMLAnchorElement;
+
   let presetModalMode: "add" | "rename" | "delete" | "reset" | null = null;
   let presetToModify: string | null = null;
   
@@ -247,6 +251,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("pagehide", saveCurrentProfile);
     languageSelect?.addEventListener("change", saveCurrentProfile);
     resetTokensBtn?.addEventListener("click", handleResetTokens);
+
+    // Help icon event listeners
+    platformHelpIcon?.addEventListener("click", handlePlatformHelp);
+    promptsHelpIcon?.addEventListener("click", handlePromptsHelp);
   }
 
   // Usage Statistics Functions
@@ -1241,6 +1249,18 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Show modal
     modal.classList.add("show");
+  }
+
+  function handlePlatformHelp(e: Event): void {
+    e.preventDefault();
+    const helpUrl = "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/API_KEYS.md";
+    chrome.tabs.create({ url: helpUrl });
+  }
+
+  function handlePromptsHelp(e: Event): void {
+    e.preventDefault();
+    const helpUrl = "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/CUSTOM_PROMPTS.md";
+    chrome.tabs.create({ url: helpUrl });
   }
 
   function debounce<F extends (...args: any[]) => any>(

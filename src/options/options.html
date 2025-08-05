@@ -217,6 +217,35 @@
         align-items: center;
         gap: 12px;
         margin-bottom: 20px;
+        position: relative;
+      }
+
+      .help-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6b7280, #9ca3af);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: auto;
+        text-decoration: none;
+        user-select: none;
+      }
+
+      .help-icon:hover {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+
+      .help-icon:active {
+        transform: scale(0.95);
       }
 
       .section-icon {
@@ -935,6 +964,7 @@
             <div class="section-header">
               <div class="section-icon platform-icon">🤖</div>
               <h3>AI Platform Configuration</h3>
+              <a href="#" class="help-icon" id="platform-help" title="Click for help with API keys and platform setup">?</a>
             </div>
 
             <div class="form-row">
@@ -996,6 +1026,7 @@
             <div class="section-header">
               <div class="section-icon prompt-icon">💬</div>
               <h3>Custom Prompts</h3>
+              <a href="#" class="help-icon" id="prompts-help" title="Click for help with creating custom prompts">?</a>
             </div>
 
             <div class="form-group">
