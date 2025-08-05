@@ -824,17 +824,6 @@ document.addEventListener("DOMContentLoaded", () => {
     showStatus("Profile created successfully!", "success");
   }
 
-  // Batch cleanup function for preset keys
-  function cleanupPresetKeys(profileId: string, presetIds: string[]): void {
-    const keysToRemove = presetIds.map(id => `profile_${profileId}_${id}`);
-    chrome.storage.sync.remove(keysToRemove, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error cleaning up preset keys:", chrome.runtime.lastError.message);
-      } else {
-        console.log(`Cleaned up ${keysToRemove.length} preset keys for profile ${profileId}`);
-      }
-    });
-  }
 
   function deleteProfile(profileId: string): void {
     if (profileId === "default" || !profiles[profileId]) return;
@@ -918,29 +907,19 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSettings();
   }
 
-  function getSavableProfile(profile: Profile, profileId: string): StoredProfile {
+  function getSavableProfile(profile: Profile): StoredProfile {
+    // Since we now load all presets from individual storage keys,
+    // we don't need to store any preset references in the main profile
     const savableProfile: StoredProfile = {
-      ...profile,
-      presets: {}, // Start with an empty presets object
+      name: profile.name,
+      platform: profile.platform,
+      model: profile.model,
+      apiKey: profile.apiKey,
+      language: profile.language,
+      currentPreset: profile.currentPreset,
+      presets: {}, // Always empty - all presets stored individually
     };
-
-    // Only store preset references that exist, using dirty tracking for defaults
-    for (const presetKey in profile.presets) {
-      const preset = profile.presets[presetKey];
-      const trackingKey = `${profileId}_${presetKey}`;
-      
-      if (preset.isDefault) {
-        // Only store reference if modified in this session (will be stored individually)
-        if (modifiedPresets.has(trackingKey)) {
-          // Just store minimal reference - data is stored separately
-          savableProfile.presets[presetKey] = { isDefault: true };
-        }
-        // For unmodified defaults, don't store anything in profile
-      } else {
-        // Custom preset - store minimal reference
-        savableProfile.presets[presetKey] = { isDefault: false };
-      }
-    }
+    
     return savableProfile;
   }
 
@@ -954,8 +933,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // First, save all profiles
     for (const profileId in profiles) {
       dataToSave[`profile_${profileId}`] = getSavableProfile(
-        profiles[profileId],
-        profileId
+        profiles[profileId]
       );
     }
 
@@ -1060,37 +1038,34 @@ document.addEventListener("DOMContentLoaded", () => {
             JSON.stringify(defaultPrompts.presets)
           );
 
-          // Mark all as default and merge user's modifications
+          // Mark all default presets and check for individual overrides
           for (const key in fullPresets) {
             fullPresets[key].isDefault = true;
-            // If user has a modified version of this default preset, merge it
-            if (
-              userProfile.presets &&
-              userProfile.presets[key] &&
-              userProfile.presets[key].isDefault
-            ) {
-              // Check if there's an individual preset stored
-              const individualPresetKey = `profile_${profileId}_${key}`;
-              if (data[individualPresetKey]) {
-                Object.assign(fullPresets[key], data[individualPresetKey]);
-              } else {
-                Object.assign(fullPresets[key], userProfile.presets[key]);
-              }
+            // Check if there's an individual preset stored for this default preset
+            const individualPresetKey = `profile_${profileId}_${key}`;
+            if (data[individualPresetKey]) {
+              // Individual preset data takes precedence
+              Object.assign(fullPresets[key], data[individualPresetKey]);
             }
           }
 
-          // Add user's custom (non-default) presets
-          if (userProfile.presets) {
-            for (const key in userProfile.presets) {
-              if (!userProfile.presets[key].isDefault) {
-                // Check if there's an individual preset stored
-                const individualPresetKey = `profile_${profileId}_${key}`;
-                if (data[individualPresetKey]) {
-                  fullPresets[key] = data[individualPresetKey];
-                } else {
-                  fullPresets[key] = userProfile.presets[key];
-                }
+          // Scan for any individual preset keys that belong to this profile
+          // This loads both modified defaults and custom presets
+          for (const storageKey in data) {
+            if (storageKey.startsWith(`profile_${profileId}_`)) {
+              const presetId = storageKey.replace(`profile_${profileId}_`, '');
+              const presetData = data[storageKey];
+              
+              // Skip if this is not a preset object, if we already processed it, or if it's empty
+              if (!presetData || typeof presetData !== 'object' || 
+                  !presetData.hasOwnProperty('system_prompt') || 
+                  fullPresets[presetId] ||
+                  !presetId || presetId.length === 0) {
+                continue;
               }
+              
+              // Add this preset to our collection (custom presets will be added here)
+              fullPresets[presetId] = presetData;
             }
           }
 
@@ -1100,10 +1075,12 @@ document.addEventListener("DOMContentLoaded", () => {
             presets: fullPresets,
           };
         }
+        
         resolve();
       });
     });
   }
+
 
   function testApiKey(isSilent: boolean = false): void {
     const apiKey = apiKeyInput.value.trim();
