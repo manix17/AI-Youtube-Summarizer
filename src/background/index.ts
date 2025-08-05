@@ -97,34 +97,45 @@ async function handleSummarize(
     const promptsRes = await fetch(chrome.runtime.getURL("assets/prompts.json"));
     const defaultPrompts = await promptsRes.json();
 
-    // 2. Load the user's lean profile from storage
-    const profileKey = `profile_${profileId}`;
-    const storageData = (await chrome.storage.sync.get(profileKey)) as {
-      [key: string]: any;
-    };
-    const userProfile = storageData[profileKey];
+    // 2. Load all storage data to reconstruct the profile properly
+    const allStorageData = await chrome.storage.sync.get(null);
+    const userProfile = allStorageData[`profile_${profileId}`];
 
     if (!userProfile || !userProfile.apiKey) {
       throw new Error(`API key for profile "${profileId}" is missing.`);
     }
 
-    // 3. Reconstruct the full profile
+    // 3. Reconstruct the full profile using the same logic as options page
     const fullPresets = JSON.parse(JSON.stringify(defaultPrompts.presets));
+    
+    // Mark all default presets and check for individual overrides
     for (const key in fullPresets) {
       fullPresets[key].isDefault = true;
-      if (
-        userProfile.presets &&
-        userProfile.presets[key] &&
-        userProfile.presets[key].isDefault
-      ) {
-        Object.assign(fullPresets[key], userProfile.presets[key]);
+      // Check if there's an individual preset stored for this default preset
+      const individualPresetKey = `profile_${profileId}_${key}`;
+      if (allStorageData[individualPresetKey]) {
+        // Individual preset data takes precedence
+        Object.assign(fullPresets[key], allStorageData[individualPresetKey]);
       }
     }
-    if (userProfile.presets) {
-      for (const key in userProfile.presets) {
-        if (!userProfile.presets[key].isDefault) {
-          fullPresets[key] = userProfile.presets[key];
+
+    // Scan for any individual preset keys that belong to this profile
+    // This loads both modified defaults and custom presets
+    for (const storageKey in allStorageData) {
+      if (storageKey.startsWith(`profile_${profileId}_`)) {
+        const presetId = storageKey.replace(`profile_${profileId}_`, '');
+        const presetData = allStorageData[storageKey];
+        
+        // Skip if this is not a preset object, if we already processed it, or if it's empty
+        if (!presetData || typeof presetData !== 'object' || 
+            !presetData.hasOwnProperty('system_prompt') || 
+            fullPresets[presetId] ||
+            !presetId || presetId.length === 0) {
+          continue;
         }
+        
+        // Add this preset to our collection (custom presets will be added here)
+        fullPresets[presetId] = presetData;
       }
     }
 
