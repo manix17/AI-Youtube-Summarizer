@@ -64,5 +64,42 @@ describe("DOM Parser Utils", () => {
       const result = convertToHTML(text);
       expect(result).toContain("<code>code</code>");
     });
+
+    it("should convert numbered items to ordered lists", () => {
+      const text = `1. First item\n2. Second item\n3. Third item`;
+      const result = convertToHTML(text);
+      expect(result).toContain("<ol>");
+      expect(result).toContain("</ol>");
+      expect(result).toContain("<li>First item</li>");
+      expect(result).toContain("<li>Second item</li>");
+      expect(result).toContain("<li>Third item</li>");
+    });
+
+    it("should handle ** formatting in headings", () => {
+      const text = "### My **Bold** Heading";
+      const result = convertToHTML(text);
+      expect(result).toBe("<h3>My <strong>Bold</strong> Heading</h3>");
+    });
+
+    it("should handle Q1: format as strong text, not list items", () => {
+      const text = "**Q1:** What is the main point?";
+      const result = convertToHTML(text);
+      expect(result).toBe("<p><strong>Q1:</strong> What is the main point?</p>");
+      expect(result).not.toContain("<ul>");
+      expect(result).not.toContain("<li>");
+    });
+
+    it("should handle mixed ordered and unordered lists", () => {
+      const text = `1. First numbered item
+2. Second numbered item
+
+* First bullet item
+* Second bullet item`;
+      const result = convertToHTML(text);
+      expect(result).toContain("<ol>");
+      expect(result).toContain("</ol>");
+      expect(result).toContain("<ul>");
+      expect(result).toContain("</ul>");
+    });
   });
 });

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Conversion Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 5px;
+        }
+        
+        .raw-markdown {
+            background-color: #f5f5f5;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 500px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .converted-html {
+            background-color: #fff;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .test-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+        }
+        
+        select {
+            padding: 8px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .summary-selector {
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        /* Highlight the fixed issues */
+        .converted-html ol {
+            background-color: #e8f5e8 !important;
+            padding: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .converted-html h3 strong {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .converted-html p strong {
+            background-color: #d1ecf1;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .live-test {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        
+        .live-test textarea {
+            width: 100%;
+            height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        
+        .legend {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e8f4fd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .legend strong {
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Markdown Conversion Test Page</h1>
+    
+    <div class="legend">
+        <strong>Legend:</strong> 
+        <span style="background-color: #e8f5e8; padding: 2px 6px; border-radius: 3px;">🟢 Ordered Lists (ol)</span> |
+        <span style="background-color: #fff3cd; padding: 2px 6px; border-radius: 3px;">🟡 Bold in Headings</span> |
+        <span style="background-color: #d1ecf1; padding: 2px 6px; border-radius: 3px;">🔵 Q1: Format</span>
+    </div>
+    
+    <div class="test-controls">
+        <label for="summarySelect">Choose a test sample:</label>
+        <select id="summarySelect" class="summary-selector">
+            <option value="">Loading samples...</option>
+        </select>
+        <button onclick="loadSelectedSummary()">Load Sample</button>
+        <button onclick="showAllSamples()">Show All Samples</button>
+    </div>
+    
+    <div class="live-test">
+        <h3>🔴 Live Test Area</h3>
+        <p>Type or paste markdown here to test conversion in real-time:</p>
+        <textarea id="liveInput" placeholder="Type your markdown here...
+
+Example:
+### My **Bold** Heading
+
+1. First numbered item
+2. Second numbered item
+
+* First bullet item
+* Second bullet item
+
+**Q1:** What is the main point?
+**Q2:** How does this work?"></textarea>
+        
+        <button onclick="convertLiveInput()" style="margin-top: 10px;">Convert to HTML</button>
+        
+        <div id="liveOutput" class="container" style="display: none; margin-top: 15px;">
+            <div class="section">
+                <h3>Raw Markdown</h3>
+                <div id="liveRaw" class="raw-markdown"></div>
+            </div>
+            <div class="section">
+                <h3>Converted HTML</h3>
+                <div id="liveConverted" class="converted-html"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="testResults"></div>
+
+    <script type="module">
+        // Import the actual convertToHTML function from the JS module wrapper
+        import { convertToHTML } from './dom-parser-module.js';
+        
+        // Load the test data
+        let testData = [];
+        
+        async function loadTestData() {
+            try {
+                const response = await fetch('../tests/fixtures/md_rendering_test.json');
+                testData = await response.json();
+                
+                const select = document.getElementById('summarySelect');
+                select.innerHTML = '<option value="">Select a test sample...</option>';
+                
+                testData.forEach((item, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    const preview = item.summary.substring(0, 80).replace(/\n/g, ' ') + '...';
+                    option.textContent = `Sample ${index + 1}: ${preview}`;
+                    select.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error loading test data:', error);
+                document.getElementById('summarySelect').innerHTML = '<option value="">Error loading samples</option>';
+            }
+        }
+        
+        
+        function loadSelectedSummary() {
+            const select = document.getElementById('summarySelect');
+            const index = select.value;
+            
+            if (index === '') return;
+            
+            const summary = testData[index].summary;
+            showSingleSample(summary, `Sample ${parseInt(index) + 1}`);
+        }
+        
+        function showSingleSample(markdown, title = 'Test Sample') {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `
+                <h2>${title}</h2>
+                <div class="container">
+                    <div class="section">
+                        <h3>📝 Raw Markdown</h3>
+                        <div class="raw-markdown">${markdown}</div>
+                    </div>
+                    <div class="section">
+                        <h3>🎨 Converted HTML</h3>
+                        <div class="converted-html">${window.convertToHTML ? window.convertToHTML(markdown) : 'convertToHTML function not loaded'}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showAllSamples() {
+            const resultsDiv = document.getElementById('testResults');
+            let html = '<h2>🎯 All Test Samples</h2>';
+            
+            testData.forEach((item, index) => {
+                const convertedHtml = window.convertToHTML ? window.convertToHTML(item.summary) : 'convertToHTML function not loaded';
+                html += `
+                    <h3>Sample ${index + 1}</h3>
+                    <div class="container">
+                        <div class="section">
+                            <h3>📝 Raw Markdown</h3>
+                            <div class="raw-markdown">${item.summary}</div>
+                        </div>
+                        <div class="section">
+                            <h3>🎨 Converted HTML</h3>
+                            <div class="converted-html">${convertedHtml}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function convertLiveInput() {
+            const input = document.getElementById('liveInput').value;
+            
+            if (!input.trim()) {
+                alert('Please enter some markdown to convert!');
+                return;
+            }
+            
+            const outputDiv = document.getElementById('liveOutput');
+            const rawDiv = document.getElementById('liveRaw');
+            const convertedDiv = document.getElementById('liveConverted');
+            
+            rawDiv.textContent = input;
+            convertedDiv.innerHTML = window.convertToHTML ? window.convertToHTML(input) : 'convertToHTML function not loaded';
+            
+            outputDiv.style.display = 'grid';
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Make functions globally available for the HTML event handlers
+            window.convertToHTML = convertToHTML;
+            window.loadSelectedSummary = loadSelectedSummary;
+            window.showAllSamples = showAllSamples;
+            window.convertLiveInput = convertLiveInput;
+            
+            await loadTestData();
+        });
+    </script>
+</body>
+</html>

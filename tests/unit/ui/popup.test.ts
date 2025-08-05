@@ -141,7 +141,7 @@ describe("Popup UI", () => {
     document.body.innerHTML = popupHTML;
 
     // Mock chrome.tabs.query
-    const mockTabsQuery = jest.fn((query, callback) => {
+    const mockTabsQuery = jest.fn((_query, callback) => {
       callback([{ url: "https://www.youtube.com/watch?v=test", active: true }]);
     });
     mockChrome.tabs.query = mockTabsQuery;
@@ -200,7 +200,7 @@ describe("Popup UI", () => {
     document.body.innerHTML = popupHTML;
 
     // Mock chrome.tabs.query for non-YouTube tab
-    const mockTabsQuery = jest.fn((query, callback) => {
+    const mockTabsQuery = jest.fn((_query, callback) => {
       callback([{ url: "https://www.google.com", active: true }]);
     });
     mockChrome.tabs.query = mockTabsQuery;
