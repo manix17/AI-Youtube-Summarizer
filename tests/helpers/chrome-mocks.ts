@@ -11,6 +11,7 @@ export const createMockChrome = () => ({
       }
     }),
     getURL: jest.fn((path) => `chrome-extension://mock-extension-id/${path}`),
+    openOptionsPage: jest.fn(),
   },
   storage: {
     sync: {
@@ -33,7 +34,11 @@ export const createMockChrome = () => ({
     },
   },
   tabs: {
-    query: jest.fn(),
+    query: jest.fn((query, callback) => {
+      if (callback) {
+        callback([{ url: "https://example.com", active: true }]);
+      }
+    }),
     create: jest.fn(),
   },
 });

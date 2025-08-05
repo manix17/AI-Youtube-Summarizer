@@ -1010,6 +1010,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise((resolve) => {
       chrome.storage.sync.get(null, (data) => {
         let storedProfiles: Record<string, Profile> = {};
+        let isFirstRun = false;
 
         if (data.profile_ids) {
           // New structure: profiles are stored individually
@@ -1022,6 +1023,7 @@ document.addEventListener("DOMContentLoaded", () => {
           currentProfileId = data.currentProfile || "default";
         } else {
           // First time run, create a default profile.
+          isFirstRun = true;
           storedProfiles = {
             default: {
               name: "Default",
@@ -1082,6 +1084,15 @@ document.addEventListener("DOMContentLoaded", () => {
             ...userProfile,
             presets: fullPresets,
           };
+        }
+        
+        // If this is the first run, save the default profile to storage
+        if (isFirstRun) {
+          // Temporarily allow saves during first run initialization
+          const wasInitializing = isInitializing;
+          isInitializing = false;
+          saveSettings();
+          isInitializing = wasInitializing;
         }
         
         resolve();

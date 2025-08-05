@@ -9,6 +9,7 @@ const mockTestOpenApiKey = jest.fn();
 const mockTestAnthropicApiKey = jest.fn();
 const mockTestGeminiApiKey = jest.fn();
 const mockGenerateSummary = jest.fn();
+const mockTrackSummarization = jest.fn();
 
 jest.mock("../../../src/utils/api_tester", () => ({
   testOpenApiKey: mockTestOpenApiKey,
@@ -20,6 +21,10 @@ jest.mock("../../../src/utils/api", () => ({
   generateSummary: mockGenerateSummary,
 }));
 
+jest.mock("../../../src/utils/usage_tracker", () => ({
+  trackSummarization: mockTrackSummarization,
+}));
+
 describe("Background Script", () => {
   let mockChrome: ReturnType<typeof setupChromeMocks>;
   let messageHandler: Function;
@@ -27,24 +32,45 @@ describe("Background Script", () => {
   beforeEach(() => {
     mockChrome = setupChromeMocks();
     jest.clearAllMocks();
+    
+    // Mock the usage tracker to resolve successfully
+    mockTrackSummarization.mockResolvedValue(undefined);
 
-    // Mock fetch for prompts.json
+    // Mock fetch for prompts.json - matches actual structure
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve({
           presets: {
             detailed: {
-              name: "Detailed Summary",
+              name: "📖 Detailed Summary",
               system_prompt: "You are a helpful assistant.",
               user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
-              temperature: 0.7,
+              temperature: 0.3,
             },
-            concise: {
-              name: "Concise Summary",
+            brief: {
+              name: "☕️ Brief Summary",
               system_prompt: "You are a concise assistant.",
               user_prompt: "Briefly summarize: {VIDEO_TRANSCRIPT}",
-              temperature: 0.5,
+              temperature: 0.3,
+            },
+            study_notes: {
+              name: "📚 Study Notes",
+              system_prompt: "You are an educational assistant.",
+              user_prompt: "Create study notes: {VIDEO_TRANSCRIPT}",
+              temperature: 0.2,
+            },
+            key_takeaway: {
+              name: "🎯 Key Takeaways",
+              system_prompt: "You are a content strategist.",
+              user_prompt: "Extract key takeaways: {VIDEO_TRANSCRIPT}",
+              temperature: 0.6,
+            },
+            quiz_generator: {
+              name: "❓ Quiz Generator",
+              system_prompt: "You are an assessment designer.",
+              user_prompt: "Generate quiz questions: {VIDEO_TRANSCRIPT}",
+              temperature: 0.4,
             },
           },
         }),
@@ -207,7 +233,7 @@ describe("Background Script", () => {
       const mockSummary = "This is a test summary of the video content.";
       mockGenerateSummary.mockResolvedValue(mockSummary);
 
-      // Mock storage response for Promise-based API
+      // Mock storage response for Promise-based API with new storage structure
       mockChrome.storage.sync.get.mockImplementation((keys) => {
         return Promise.resolve({
           profile_default: {
@@ -216,16 +242,16 @@ describe("Background Script", () => {
             model: "gpt-4",
             apiKey: "sk-test123",
             language: "English",
-            presets: {
-              detailed: {
-                name: "Detailed",
-                system_prompt: "Custom system prompt",
-                user_prompt: "Custom user prompt",
-                temperature: 0.8,
-                isDefault: true,
-              },
-            },
             currentPreset: "detailed",
+            presets: {}, // Empty in new structure
+          },
+          // Individual preset with custom modifications
+          profile_default_detailed: {
+            name: "Detailed",
+            system_prompt: "Custom system prompt",
+            user_prompt: "Custom user prompt",
+            temperature: 0.8,
+            isDefault: true,
           },
         });
       });
@@ -247,9 +273,9 @@ describe("Background Script", () => {
       messageHandler(request, {}, sendResponse);
 
       // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      expect(mockChrome.storage.sync.get).toHaveBeenCalledWith("profile_default");
+      expect(mockChrome.storage.sync.get).toHaveBeenCalledWith(null);
       expect(mockGenerateSummary).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Default Profile",
@@ -469,22 +495,24 @@ describe("Background Script", () => {
             model: "gpt-4",
             apiKey: "sk-test123",
             language: "English",
-            presets: {
-              // Custom preset (not default)
-              custom: {
-                name: "Custom Preset",
-                system_prompt: "Custom system",
-                user_prompt: "Custom user",
-                temperature: 1.0,
-                isDefault: false,
-              },
-              // Modified default preset
-              detailed: {
-                temperature: 0.9,
-                isDefault: true,
-              },
-            },
             currentPreset: "custom",
+            presets: {}, // Empty in new structure
+          },
+          // Custom preset stored individually
+          profile_default_custom: {
+            name: "Custom Preset",
+            system_prompt: "Custom system",
+            user_prompt: "Custom user",
+            temperature: 1.0,
+            isDefault: false,
+          },
+          // Modified default preset stored individually (only overridden fields)
+          profile_default_detailed: {
+            name: "Detailed Summary",
+            system_prompt: "You are a helpful assistant.",
+            user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
+            temperature: 0.9, // This was modified from default
+            isDefault: true,
           },
         });
       });
@@ -521,7 +549,7 @@ describe("Background Script", () => {
             },
             // Should contain the modified default preset
             detailed: expect.objectContaining({
-              name: "Detailed Summary",
+              name: "Detailed Summary", // This should match the stored user override name
               system_prompt: "You are a helpful assistant.",
               user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
               temperature: 0.9, // Modified temperature
@@ -573,23 +601,24 @@ describe("Background Script", () => {
             model: "claude-3-5-sonnet",
             apiKey: "sk-ant-test",
             language: "Spanish",
-            presets: {
-              // This should override the default detailed preset
-              detailed: {
-                system_prompt: "Modified system prompt",
-                temperature: 0.3,
-                isDefault: true,
-              },
-              // This is a completely custom preset
-              myCustom: {
-                name: "My Custom Preset",
-                system_prompt: "My system",
-                user_prompt: "My user prompt",
-                temperature: 1.2,
-                isDefault: false,
-              },
-            },
             currentPreset: "myCustom",
+            presets: {}, // Empty in new structure
+          },
+          // Modified default preset stored individually
+          profile_test_detailed: {
+            name: "Detailed Summary", // From default
+            system_prompt: "Modified system prompt", // From user override
+            user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}", // From default
+            temperature: 0.3, // From user override
+            isDefault: true,
+          },
+          // Custom preset stored individually
+          profile_test_myCustom: {
+            name: "My Custom Preset",
+            system_prompt: "My system",
+            user_prompt: "My user prompt",
+            temperature: 1.2,
+            isDefault: false,
           },
         });
       });
@@ -610,7 +639,7 @@ describe("Background Script", () => {
 
       messageHandler(request, {}, sendResponse);
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(mockGenerateSummary).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -623,18 +652,18 @@ describe("Background Script", () => {
           presets: expect.objectContaining({
             // Should have the modified default preset
             detailed: expect.objectContaining({
-              name: "Detailed Summary", // From default
+              name: "Detailed Summary", // From user override
               system_prompt: "Modified system prompt", // From user override
               user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}", // From default
               temperature: 0.3, // From user override
               isDefault: true,
             }),
-            // Should have the default concise preset (unmodified)
-            concise: expect.objectContaining({
-              name: "Concise Summary",
+            // Should have the default brief preset (unmodified)
+            brief: expect.objectContaining({
+              name: "☕️ Brief Summary",
               system_prompt: "You are a concise assistant.",
               user_prompt: "Briefly summarize: {VIDEO_TRANSCRIPT}",
-              temperature: 0.5,
+              temperature: 0.3,
               isDefault: true,
             }),
             // Should have the custom preset

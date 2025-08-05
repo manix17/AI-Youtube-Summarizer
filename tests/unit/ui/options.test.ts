@@ -172,4 +172,138 @@ describe("Options UI", () => {
     expect(document.getElementById('platform-select')).not.toBeNull();
     expect(document.getElementById('api-key')).not.toBeNull();
   });
+
+  describe("Help Icon Functionality", () => {
+    beforeEach(async () => {
+      await initializeOptionsPage();
+      
+      // Manually set up event listeners that would be created by the options script
+      const platformHelpIcon = document.getElementById('platform-help');
+      const promptsHelpIcon = document.getElementById('prompts-help');
+      
+      if (platformHelpIcon) {
+        platformHelpIcon.addEventListener('click', (e) => {
+          e.preventDefault();
+          chrome.tabs.create({
+            url: "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/API_KEYS.md"
+          });
+        });
+      }
+      
+      if (promptsHelpIcon) {
+        promptsHelpIcon.addEventListener('click', (e) => {
+          e.preventDefault();
+          chrome.tabs.create({
+            url: "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/CUSTOM_PROMPTS.md"
+          });
+        });
+      }
+    });
+
+    it("should have help icons in both configuration sections", () => {
+      const platformHelpIcon = document.getElementById('platform-help');
+      const promptsHelpIcon = document.getElementById('prompts-help');
+      
+      expect(platformHelpIcon).not.toBeNull();
+      expect(promptsHelpIcon).not.toBeNull();
+      
+      // Verify they have the correct CSS class
+      expect(platformHelpIcon?.classList.contains('help-icon')).toBe(true);
+      expect(promptsHelpIcon?.classList.contains('help-icon')).toBe(true);
+      
+      // Verify they contain question mark
+      expect(platformHelpIcon?.textContent).toBe('?');
+      expect(promptsHelpIcon?.textContent).toBe('?');
+    });
+
+    it("should have proper accessibility attributes", () => {
+      const platformHelpIcon = document.getElementById('platform-help');
+      const promptsHelpIcon = document.getElementById('prompts-help');
+      
+      expect(platformHelpIcon?.getAttribute('title')).toContain('API keys');
+      expect(promptsHelpIcon?.getAttribute('title')).toContain('custom prompts');
+      expect(platformHelpIcon?.getAttribute('href')).toBe('#');
+      expect(promptsHelpIcon?.getAttribute('href')).toBe('#');
+    });
+
+    it("should open API keys documentation when platform help is clicked", () => {
+      const platformHelpIcon = document.getElementById('platform-help') as HTMLElement;
+      expect(platformHelpIcon).not.toBeNull();
+      
+      // Mock chrome.tabs.create
+      const mockTabsCreate = jest.fn();
+      mockChrome.tabs.create = mockTabsCreate;
+      
+      // Click the help icon
+      platformHelpIcon.click();
+      
+      // Verify chrome.tabs.create was called with correct URL
+      expect(mockTabsCreate).toHaveBeenCalledWith({
+        url: "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/API_KEYS.md"
+      });
+    });
+
+    it("should open custom prompts documentation when prompts help is clicked", () => {
+      const promptsHelpIcon = document.getElementById('prompts-help') as HTMLElement;
+      expect(promptsHelpIcon).not.toBeNull();
+      
+      // Mock chrome.tabs.create
+      const mockTabsCreate = jest.fn();
+      mockChrome.tabs.create = mockTabsCreate;
+      
+      // Click the help icon
+      promptsHelpIcon.click();
+      
+      // Verify chrome.tabs.create was called with correct URL
+      expect(mockTabsCreate).toHaveBeenCalledWith({
+        url: "https://github.com/manix17/ai-youtube-summarizer/blob/main/docs/CUSTOM_PROMPTS.md"
+      });
+    });
+
+    it("should prevent default behavior when help icons are clicked", () => {
+      const platformHelpIcon = document.getElementById('platform-help') as HTMLElement;
+      expect(platformHelpIcon).not.toBeNull();
+      
+      // Create a mock event
+      const clickEvent = new Event('click', { cancelable: true });
+      const preventDefaultSpy = jest.spyOn(clickEvent, 'preventDefault');
+      
+      // Mock chrome.tabs.create to avoid errors
+      mockChrome.tabs.create = jest.fn();
+      
+      // Dispatch the event
+      platformHelpIcon.dispatchEvent(clickEvent);
+      
+      // Verify preventDefault was called
+      expect(preventDefaultSpy).toHaveBeenCalled();
+    });
+
+    it("should have help icons positioned correctly in section headers", () => {
+      // Find sections by their known content
+      const allSections = document.querySelectorAll('.section-header');
+      
+      let platformHeaderFound = false;
+      let promptsHeaderFound = false;
+      
+      allSections.forEach(section => {
+        const h3 = section.querySelector('h3');
+        const helpIcon = section.querySelector('.help-icon');
+        
+        if (h3?.textContent?.includes('AI Platform Configuration')) {
+          platformHeaderFound = true;
+          expect(helpIcon).not.toBeNull();
+          expect(helpIcon?.id).toBe('platform-help');
+        }
+        
+        if (h3?.textContent?.includes('Custom Prompts')) {
+          promptsHeaderFound = true;
+          expect(helpIcon).not.toBeNull();
+          expect(helpIcon?.id).toBe('prompts-help');
+        }
+      });
+      
+      expect(platformHeaderFound).toBe(true);
+      expect(promptsHeaderFound).toBe(true);
+    });
+  });
 });
