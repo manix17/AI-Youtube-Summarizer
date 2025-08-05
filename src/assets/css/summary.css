@@ -11,6 +11,14 @@
   border: 1px solid #ccc;
   background-color: #f9f9f9;
   font-size: 14px;
+  color: #0f0f0f;
+  font-family: "Roboto", "Arial", sans-serif;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.summary-select:focus {
+  outline: none;
+  border-color: #007bff;
 }
 
 .summarize-btn {
@@ -22,6 +30,18 @@
   cursor: pointer;
   font-size: 14px;
   margin: 10px 0;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.summarize-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.summarize-btn:active {
+  transform: translateY(0);
 }
 
 .close-summary-btn {
@@ -352,4 +372,82 @@
 #summary-container.dark .markdown-content code {
   background: #333;
   color: #ff8a8a;
+}
+
+/* Dark theme for UI inputs - following YouTube's dark theme */
+.summarize-ui-container.dark .summary-select {
+  background-color: #212121;
+  border-color: #383838;
+  color: #ffffff;
+}
+
+.summarize-ui-container.dark .summary-select:focus {
+  border-color: #3ea6ff;
+}
+
+.summarize-ui-container.dark .summary-select option {
+  background-color: #212121;
+  color: #ffffff;
+}
+
+.summarize-ui-container.dark .summarize-btn {
+  background-color: #3ea6ff;
+  color: #0f0f0f;
+}
+
+.summarize-ui-container.dark .summarize-btn:hover {
+  background-color: #65b8ff;
+}
+
+.summarize-ui-container.dark .summarize-btn:disabled {
+  background-color: #383838;
+  color: #717171;
+}
+
+/* Alternative approach - using html.dark or body.dark for global detection */
+html[dark] .summary-select,
+[dark] .summary-select,
+body.dark .summary-select,
+html.dark .summary-select {
+  background-color: #212121;
+  border-color: #383838;
+  color: #ffffff;
+}
+
+html[dark] .summary-select:focus,
+[dark] .summary-select:focus,
+body.dark .summary-select:focus,
+html.dark .summary-select:focus {
+  border-color: #3ea6ff;
+}
+
+html[dark] .summary-select option,
+[dark] .summary-select option,
+body.dark .summary-select option,
+html.dark .summary-select option {
+  background-color: #212121;
+  color: #ffffff;
+}
+
+html[dark] .summarize-btn,
+[dark] .summarize-btn,
+body.dark .summarize-btn,
+html.dark .summarize-btn {
+  background-color: #3ea6ff;
+  color: #0f0f0f;
+}
+
+html[dark] .summarize-btn:hover,
+[dark] .summarize-btn:hover,
+body.dark .summarize-btn:hover,
+html.dark .summarize-btn:hover {
+  background-color: #65b8ff;
+}
+
+html[dark] .summarize-btn:disabled,
+[dark] .summarize-btn:disabled,
+body.dark .summarize-btn:disabled,
+html.dark .summarize-btn:disabled {
+  background-color: #383838;
+  color: #717171;
 }

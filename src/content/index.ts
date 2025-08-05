@@ -118,8 +118,12 @@ function setupDarkModeObserver(): void {
       if (mutation.type === "attributes" && mutation.attributeName === "dark") {
         const isDarkMode = targetNode.hasAttribute("dark");
         const summaryContainer = document.getElementById("summary-container");
+        const uiContainer = document.getElementById("summarize-ui-container");
         if (summaryContainer) {
           summaryContainer.classList.toggle("dark", isDarkMode);
+        }
+        if (uiContainer) {
+          uiContainer.classList.toggle("dark", isDarkMode);
         }
       }
     }
@@ -131,8 +135,12 @@ function setupDarkModeObserver(): void {
   // Initial check
   const isDarkMode = targetNode.hasAttribute("dark");
   const summaryContainer = document.getElementById("summary-container");
+  const uiContainer = document.getElementById("summarize-ui-container");
   if (summaryContainer) {
     summaryContainer.classList.toggle("dark", isDarkMode);
+  }
+  if (uiContainer) {
+    uiContainer.classList.toggle("dark", isDarkMode);
   }
 }
 
