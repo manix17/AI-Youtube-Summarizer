@@ -980,10 +980,20 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set(dataToSave, async () => {
       if (chrome.runtime.lastError) {
         console.error("Save settings error:", chrome.runtime.lastError.message);
-        showStatus(
-          `Error saving settings: ${chrome.runtime.lastError.message}`,
-          "error"
-        );
+        
+        const errorMessage = chrome.runtime.lastError.message || "Unknown error";
+        
+        // Handle quota exceeded errors with helpful user guidance
+        if (errorMessage.includes("quota") || errorMessage.includes("QUOTA_BYTES_PER_ITEM")) {
+          // Find which item is too large by checking sizes
+          const largeItems = findLargeStorageItems(dataToSave);
+          showQuotaExceededError(largeItems);
+        } else {
+          showStatus(
+            `Error saving settings: ${errorMessage}`,
+            "error"
+          );
+        }
         return;
       }
       
@@ -1141,6 +1151,119 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMessage.textContent = message;
     statusMessage.className = `status-message ${type} show`;
     setTimeout(() => statusMessage.classList.remove("show"), 3000);
+  }
+
+  function findLargeStorageItems(dataToSave: { [key: string]: any }): Array<{key: string, size: number, description: string}> {
+    const CHROME_SYNC_ITEM_LIMIT = 8192; // 8KB per item
+    const largeItems: Array<{key: string, size: number, description: string}> = [];
+    
+    for (const [key, value] of Object.entries(dataToSave)) {
+      const size = new Blob([JSON.stringify(value)]).size;
+      if (size > CHROME_SYNC_ITEM_LIMIT) { // Flag items that exceed the limit
+        let description = "Unknown item";
+        
+        if (key.startsWith("profile_")) {
+          const keyParts = key.split("_");
+          if (keyParts.length >= 3) {
+            // Individual preset: profile_${profileId}_${presetId}
+            const profileName = profiles[keyParts[1]]?.name || keyParts[1];
+            const presetName = profiles[keyParts[1]]?.presets[keyParts.slice(2).join("_")]?.name || keyParts.slice(2).join("_");
+            description = `Preset "${presetName}" in profile "${profileName}"`;
+          } else {
+            // Main profile: profile_${profileId}
+            const profileName = profiles[keyParts[1]]?.name || keyParts[1];
+            description = `Profile "${profileName}"`;
+          }
+        } else if (key === "profile_ids") {
+          description = "Profile list";
+        } else if (key === "currentProfile") {
+          description = "Current profile setting";
+        }
+        
+        largeItems.push({ key, size, description });
+      }
+    }
+    
+    return largeItems.sort((a, b) => b.size - a.size);
+  }
+
+  function showQuotaExceededError(largeItems: Array<{key: string, size: number, description: string}> = []): void {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById("quota-error-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "quota-error-modal";
+      modal.className = "modal";
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div class="modal-header">
+            <h3 style="color: #dc2626;">⚠️ Storage Quota Exceeded</h3>
+            <button class="close-modal" id="quota-close-modal">&times;</button>
+          </div>
+          <div id="quota-error-content"></div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn btn-primary" id="quota-close-btn">Got it</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Add event listeners
+      const closeModal = () => {
+        modal!.classList.remove("show");
+      };
+      
+      modal.querySelector("#quota-close-modal")?.addEventListener("click", closeModal);
+      modal.querySelector("#quota-close-btn")?.addEventListener("click", closeModal);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+    
+    // Update modal content
+    const content = modal.querySelector("#quota-error-content");
+    if (content) {
+      let html = `
+        <p style="margin-bottom: 16px; line-height: 1.6;">
+          <strong>Chrome storage limit exceeded!</strong> Each storage item has an 8KB limit, but one or more of your items is too large.
+        </p>
+      `;
+      
+      if (largeItems.length > 0) {
+        html += `
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+            <h4 style="margin: 0 0 12px 0; color: #dc2626;">Items exceeding 8KB limit:</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+        `;
+        
+        largeItems.forEach(item => {
+          const sizeKB = (item.size / 1024).toFixed(1);
+          html += `<li style="margin-bottom: 8px;"><strong>${item.description}</strong>: ${sizeKB} KB</li>`;
+        });
+        
+        html += `</ul></div>`;
+      }
+      
+      html += `
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px;">
+          <h4 style="margin: 0 0 12px 0; color: #0369a1;">💡 How to fix this:</h4>
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+            <li><strong>Shorten your prompts:</strong> Make your system and user prompts more concise</li>
+            <li><strong>Split large presets:</strong> Break complex prompts into smaller, focused presets</li>
+            <li><strong>Use variables:</strong> Replace repeated text with variables like <code>{VIDEO_TITLE}</code></li>
+            <li><strong>Delete unused presets:</strong> Remove old presets you no longer need</li>
+          </ul>
+          <p style="margin: 16px 0 0 0; font-size: 0.9em; color: #374151;">
+            <strong>Tip:</strong> Check the "Usage Statistics" section below to see which profiles are using the most storage space.
+          </p>
+        </div>
+      `;
+      
+      content.innerHTML = html;
+    }
+    
+    // Show modal
+    modal.classList.add("show");
   }
 
   function debounce<F extends (...args: any[]) => any>(
