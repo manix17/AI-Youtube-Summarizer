@@ -629,6 +629,10 @@ document.addEventListener("DOMContentLoaded", () => {
       preset.user_prompt = defaultPreset.user_prompt;
       preset.temperature = defaultPreset.temperature;
       
+      // Remove from modified presets tracking to prevent re-saving
+      const presetKey_full = `${currentProfileId}_${presetKey}`;
+      modifiedPresets.delete(presetKey_full);
+      
       // Delete the individual preset key if it exists
       const individualPresetKey = `profile_${currentProfileId}_${presetKey}`;
       chrome.storage.sync.remove(individualPresetKey, () => {
