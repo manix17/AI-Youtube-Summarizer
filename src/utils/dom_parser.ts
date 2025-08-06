@@ -1,7 +1,6 @@
 // src/utils/dom_parser.ts
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
 
 /**
  * Pre-processes text that might be an escaped JSON string.
@@ -17,21 +16,6 @@ function preprocessText(text: string): string {
   text = text.replace(/\\r/g, "\r");
   text = text.replace(/\\t/g, "\t");
   text = text.replace(/\\\\/g, "\\");
-  return text;
-}
-
-
-/**
- * Processes inline formatting like bold, code, and timestamps.
- * Note: This function is kept for backward compatibility but is mostly replaced by marked.js
- * @param {string} text - The line of text to process.
- * @returns {string} The HTML-formatted string.
- */
-function processInlineFormatting(text: string): string {
-  text = linkifyTimestamps(text);
-  text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
-  text = text.replace(/\(e\\.g\\.,([^)]+)\)/g, "<em>(e.g.,$1)</em>");
   return text;
 }
 
@@ -81,25 +65,16 @@ function linkifyTimestamps(text: string): string {
 }
 
 /**
- * Closes all open list tags in the HTML string.
- * Note: This function is kept for backward compatibility but is not used in the new marked.js implementation
- * @param {string[]} listStack - Array of list types to close.
- * @param {string} indent - The indentation string.
- * @returns {string} The closing HTML tags.
+ * Apply timestamp links to already parsed HTML
  */
-function closeAllLists(listStack: string[], indent: string): string {
-  let html = "";
-  for (let i = listStack.length - 1; i >= 0; i--) {
-    html += `${indent.repeat(i)}</${listStack[i]}>\n`;
-  }
-  return html;
+function applyTimestampLinks(html: string): string {
+  // Find text nodes in HTML and apply timestamp processing
+  return html.replace(/>([^<]+)</g, (_, textContent) => {
+    const processedText = linkifyTimestamps(textContent);
+    return `>${processedText}<`;
+  });
 }
 
-/**
- * Converts a markdown-like text string into HTML.
- * @param {string} text - The input text with markdown formatting.
- * @returns {string} The resulting HTML string.
- */
 /**
  * Converts HTML back to markdown-like formatted text with proper indentation.
  * @param {HTMLElement} element - The HTML element to convert.
@@ -116,8 +91,18 @@ export function convertHTMLToText(element: HTMLElement): string {
       const tagName = el.tagName.toLowerCase();
       
       switch (tagName) {
+        case 'h1':
+          return `# ${processChildren(node).trim()}\n\n`;
+        case 'h2':
+          return `## ${processChildren(node).trim()}\n\n`;
         case 'h3':
           return `### ${processChildren(node).trim()}\n\n`;
+        case 'h4':
+          return `#### ${processChildren(node).trim()}\n\n`;
+        case 'h5':
+          return `##### ${processChildren(node).trim()}\n\n`;
+        case 'h6':
+          return `###### ${processChildren(node).trim()}\n\n`;
         case 'p':
           const pContent = processChildren(node).trim();
           return pContent ? `${pContent}\n\n` : '';
@@ -136,6 +121,10 @@ export function convertHTMLToText(element: HTMLElement): string {
           return `**${processChildren(node).trim()}**`;
         case 'code':
           return `\`${processChildren(node).trim()}\``;
+        case 'pre':
+          // Handle code blocks
+          const codeContent = processChildren(node).trim();
+          return `\`\`\`\n${codeContent}\n\`\`\`\n\n`;
         case 'em':
           return `*${processChildren(node).trim()}*`;
         case 'a':
@@ -188,7 +177,7 @@ export function convertHTMLToText(element: HTMLElement): string {
 }
 
 /**
- * Converts markdown text to HTML using marked.js with custom renderer and DOMPurify sanitization
+ * Converts markdown text to HTML using marked.js with DOMPurify sanitization
  * @param {string} text - The input markdown text
  * @returns {string} The sanitized HTML string
  */
@@ -196,17 +185,16 @@ export function convertToHTML(text: string): string {
   // Preprocess the text to handle escaped JSON strings
   text = preprocessText(text);
   
-  // For now, use a simple marked approach with post-processing
-  // This avoids complex renderer API issues while still providing benefits
+  // Use marked.js to parse markdown to HTML
   const rawHtml = marked(text, {
-    breaks: true,
-    gfm: true,
+    breaks: true, // Convert line breaks to <br>
+    gfm: true, // GitHub Flavored Markdown
   }) as string;
   
   // Apply timestamp processing after marked.js parsing
   const processedHtml = applyTimestampLinks(rawHtml);
   
-  // Sanitize the HTML with DOMPurify
+  // Sanitize the HTML with DOMPurify, allowing our custom timestamp links
   const cleanHtml = DOMPurify.sanitize(processedHtml, {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -216,106 +204,10 @@ export function convertToHTML(text: string): string {
     ],
     ALLOWED_ATTR: [
       'href', 'data-seconds', 'class',
-      'data-*'
+      'data-*' // Allow all data attributes for timestamp functionality
     ],
     ALLOW_DATA_ATTR: true
   });
   
   return cleanHtml.trim();
-}
-
-/**
- * Apply timestamp links to already parsed HTML
- */
-function applyTimestampLinks(html: string): string {
-  // Find text nodes in HTML and apply timestamp processing
-  return html.replace(/>([^<]+)</g, (match, textContent) => {
-    const processedText = linkifyTimestamps(textContent);
-    return `>${processedText}<`;
-  });
-}
-
-/**
- * Legacy convertToHTML function for backward compatibility
- * @deprecated Use the new convertToHTML function instead
- */
-export function convertToHTMLLegacy(text: string): string {
-  text = preprocessText(text);
-  const lines = text.split("\n");
-  let html = "";
-  let listStack: string[] = [];
-  const indent = "    ";
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine) {
-      if (listStack.length > 0) {
-        html += closeAllLists(listStack, indent);
-        listStack = [];
-      }
-      html += "\n";
-      continue;
-    }
-
-    const leadingSpaces = line.length - line.trimStart().length;
-    const currentLevel = Math.floor(leadingSpaces / 4);
-
-    if (trimmedLine.startsWith("###")) {
-      if (listStack.length > 0) {
-        html += closeAllLists(listStack, indent);
-        listStack = [];
-      }
-      const headingText = processInlineFormatting(trimmedLine.replace(/^#+\s*/, ""));
-      html += `<h3>${headingText}</h3>\n`;
-    } else if (trimmedLine.startsWith("*") && !/^\*\*\w+:/.test(trimmedLine)) {
-      // Handle unordered lists (but not **Q1:** patterns)
-      const listContent = trimmedLine.substring(1).trim();
-      
-      // Adjust list stack for current level
-      while (listStack.length > currentLevel + 1) {
-        const closedType = listStack.pop()!;
-        html += `${indent.repeat(listStack.length)}</${closedType}>\n`;
-      }
-      
-      if (listStack.length === currentLevel) {
-        html += `${indent.repeat(currentLevel)}<ul>\n`;
-        listStack.push('ul');
-      }
-      
-      const processedContent = processInlineFormatting(listContent);
-      html += `${indent.repeat(listStack.length)}<li>${processedContent}</li>\n`;
-    } else if (/^\d+\.\s/.test(trimmedLine)) {
-      // Handle ordered lists (numbered items)
-      const listContent = trimmedLine.replace(/^\d+\.\s/, "");
-      
-      // Adjust list stack for current level
-      while (listStack.length > currentLevel + 1) {
-        const closedType = listStack.pop()!;
-        html += `${indent.repeat(listStack.length)}</${closedType}>\n`;
-      }
-      
-      if (listStack.length === currentLevel) {
-        html += `${indent.repeat(currentLevel)}<ol>\n`;
-        listStack.push('ol');
-      }
-      
-      const processedContent = processInlineFormatting(listContent);
-      html += `${indent.repeat(listStack.length)}<li>${processedContent}</li>\n`;
-    } else {
-      if (listStack.length > 0) {
-        html += closeAllLists(listStack, indent);
-        listStack = [];
-      }
-      const processedContent = processInlineFormatting(trimmedLine);
-      html += `<p>${processedContent}</p>\n`;
-    }
-  }
-
-  if (listStack.length > 0) {
-    html += closeAllLists(listStack, indent);
-  }
-
-  return html.trim();
 }
