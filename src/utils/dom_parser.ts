@@ -1,4 +1,7 @@
 // src/utils/dom_parser.ts
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
 
 /**
  * Pre-processes text that might be an escaped JSON string.
@@ -17,8 +20,10 @@ function preprocessText(text: string): string {
   return text;
 }
 
+
 /**
  * Processes inline formatting like bold, code, and timestamps.
+ * Note: This function is kept for backward compatibility but is mostly replaced by marked.js
  * @param {string} text - The line of text to process.
  * @returns {string} The HTML-formatted string.
  */
@@ -77,6 +82,7 @@ function linkifyTimestamps(text: string): string {
 
 /**
  * Closes all open list tags in the HTML string.
+ * Note: This function is kept for backward compatibility but is not used in the new marked.js implementation
  * @param {string[]} listStack - Array of list types to close.
  * @param {string} indent - The indentation string.
  * @returns {string} The closing HTML tags.
@@ -181,7 +187,59 @@ export function convertHTMLToText(element: HTMLElement): string {
   return result;
 }
 
+/**
+ * Converts markdown text to HTML using marked.js with custom renderer and DOMPurify sanitization
+ * @param {string} text - The input markdown text
+ * @returns {string} The sanitized HTML string
+ */
 export function convertToHTML(text: string): string {
+  // Preprocess the text to handle escaped JSON strings
+  text = preprocessText(text);
+  
+  // For now, use a simple marked approach with post-processing
+  // This avoids complex renderer API issues while still providing benefits
+  const rawHtml = marked(text, {
+    breaks: true,
+    gfm: true,
+  }) as string;
+  
+  // Apply timestamp processing after marked.js parsing
+  const processedHtml = applyTimestampLinks(rawHtml);
+  
+  // Sanitize the HTML with DOMPurify
+  const cleanHtml = DOMPurify.sanitize(processedHtml, {
+    ALLOWED_TAGS: [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'p', 'br', 'strong', 'em', 'code', 'pre',
+      'ul', 'ol', 'li',
+      'a', 'span'
+    ],
+    ALLOWED_ATTR: [
+      'href', 'data-seconds', 'class',
+      'data-*'
+    ],
+    ALLOW_DATA_ATTR: true
+  });
+  
+  return cleanHtml.trim();
+}
+
+/**
+ * Apply timestamp links to already parsed HTML
+ */
+function applyTimestampLinks(html: string): string {
+  // Find text nodes in HTML and apply timestamp processing
+  return html.replace(/>([^<]+)</g, (match, textContent) => {
+    const processedText = linkifyTimestamps(textContent);
+    return `>${processedText}<`;
+  });
+}
+
+/**
+ * Legacy convertToHTML function for backward compatibility
+ * @deprecated Use the new convertToHTML function instead
+ */
+export function convertToHTMLLegacy(text: string): string {
   text = preprocessText(text);
   const lines = text.split("\n");
   let html = "";

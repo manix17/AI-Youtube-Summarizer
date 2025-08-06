@@ -293,13 +293,35 @@
 }
 
 /* Code and technical terms */
-.markdown-content code {
+.markdown-content code,
+.markdown-content .inline-code {
   background: #f7fafc;
   color: #e53e3e;
   padding: 2px 6px;
   border-radius: 4px;
   font-family: "Monaco", "Menlo", monospace;
   font-size: 0.9em;
+}
+
+/* Syntax highlighting for code blocks */
+.markdown-content pre.hljs {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875em;
+  line-height: 1.5;
+}
+
+.markdown-content pre.hljs code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
 }
 
 /* Dark Mode Styles */
@@ -369,9 +391,20 @@
   color: #8b94f9;
 }
 
-#summary-container.dark .markdown-content code {
+#summary-container.dark .markdown-content code,
+#summary-container.dark .markdown-content .inline-code {
   background: #333;
   color: #ff8a8a;
+}
+
+#summary-container.dark .markdown-content pre.hljs {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+#summary-container.dark .markdown-content pre.hljs code {
+  background: none;
+  color: #e2e8f0;
 }
 
 /* Dark theme for UI inputs - following YouTube's dark theme */
