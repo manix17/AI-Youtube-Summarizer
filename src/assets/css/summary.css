@@ -340,10 +340,49 @@
   display: block;
 }
 
-/* Enhanced syntax highlighting */
+/* Enhanced syntax highlighting with highlight.js integration */
 .markdown-content pre.hljs {
   background: #f8f9fa;
   border: 1px solid #e9ecef;
+}
+
+/* Syntax highlighting colors for light mode */
+.markdown-content .hljs-keyword,
+.markdown-content .hljs-selector-tag,
+.markdown-content .hljs-subst {
+  color: #d73a49;
+  font-weight: 600;
+}
+
+.markdown-content .hljs-string,
+.markdown-content .hljs-doctag {
+  color: #032f62;
+}
+
+.markdown-content .hljs-title,
+.markdown-content .hljs-section,
+.markdown-content .hljs-selector-id {
+  color: #6f42c1;
+  font-weight: 600;
+}
+
+.markdown-content .hljs-comment {
+  color: #6a737d;
+  font-style: italic;
+}
+
+.markdown-content .hljs-number,
+.markdown-content .hljs-literal {
+  color: #005cc5;
+}
+
+.markdown-content .hljs-variable,
+.markdown-content .hljs-template-variable {
+  color: #e36209;
+}
+
+.markdown-content .hljs-attribute {
+  color: #6f42c1;
 }
 
 /* Dark Mode Styles */
@@ -452,6 +491,45 @@
 #summary-container.dark .markdown-content pre.hljs {
   background: #1f2937;
   border-color: #374151;
+}
+
+/* Dark mode syntax highlighting colors */
+#summary-container.dark .markdown-content .hljs-keyword,
+#summary-container.dark .markdown-content .hljs-selector-tag,
+#summary-container.dark .markdown-content .hljs-subst {
+  color: #ff7b72;
+  font-weight: 600;
+}
+
+#summary-container.dark .markdown-content .hljs-string,
+#summary-container.dark .markdown-content .hljs-doctag {
+  color: #a5d6ff;
+}
+
+#summary-container.dark .markdown-content .hljs-title,
+#summary-container.dark .markdown-content .hljs-section,
+#summary-container.dark .markdown-content .hljs-selector-id {
+  color: #d2a8ff;
+  font-weight: 600;
+}
+
+#summary-container.dark .markdown-content .hljs-comment {
+  color: #8b949e;
+  font-style: italic;
+}
+
+#summary-container.dark .markdown-content .hljs-number,
+#summary-container.dark .markdown-content .hljs-literal {
+  color: #79c0ff;
+}
+
+#summary-container.dark .markdown-content .hljs-variable,
+#summary-container.dark .markdown-content .hljs-template-variable {
+  color: #ffa657;
+}
+
+#summary-container.dark .markdown-content .hljs-attribute {
+  color: #d2a8ff;
 }
 
 /* Dark theme for UI inputs - following YouTube's dark theme */

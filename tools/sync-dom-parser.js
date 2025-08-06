@@ -96,6 +96,39 @@ function manualConversion() {
         })
         // Remove return type annotations more carefully
         .replace(/\):\s*[^{]+\s*\{/g, ') {')
+        // Remove TypeScript parameter type annotations in function definitions
+        .replace(/function\([^)]*\)/g, (match) => {
+            return match.replace(/:\s*[^,)]+/g, '');
+        })
+        // Handle object destructuring parameters with type annotations - more comprehensive
+        .replace(/function\s*\(\{[^}]*\}:\s*\{[^}]*\}\)/g, (match) => {
+            // Extract just the destructuring pattern without types
+            const destructuringMatch = match.match(/function\s*\(\{([^}]+)\}:/);
+            if (destructuringMatch) {
+                const params = destructuringMatch[1]
+                    .split(',')
+                    .map(param => param.split(':')[0].trim())
+                    .filter(param => param.length > 0);
+                return `function({${params.join(', ')}})`;
+            }
+            return match;
+        })
+        // Additional cleanup for any remaining TypeScript parameter syntax
+        .replace(/function\s*\([^)]*\?\s*[,)]/g, (match) => {
+            return match.replace(/\?/g, '');
+        })
+        // Fix duplicate parameter names that may result from destructuring conversion
+        .replace(/function\s*\(\{([^}]+)\}[^)]*\)/g, (match) => {
+            const destructuringMatch = match.match(/function\s*\(\{([^}]+)\}/);
+            if (destructuringMatch) {
+                const params = destructuringMatch[1]
+                    .split(',')
+                    .map(param => param.split(':')[0].trim())
+                    .filter(param => param.length > 0);
+                return `function({${params.join(', ')}})`;
+            }
+            return match;
+        })
         // Remove variable type annotations
         .replace(/let\s+(\w+):\s*[^=;]+/g, 'let $1')
         .replace(/const\s+(\w+):\s*[^=;]+/g, 'const $1')
@@ -109,6 +142,9 @@ function manualConversion() {
         // Convert ES6 imports to browser-compatible format
         .replace(/^import\s+\{\s*marked\s*\}\s+from\s+['"]marked['"];?\s*$/gm, '// Import marked from CDN - should be loaded globally')
         .replace(/^import\s+.*DOMPurify.*$/gm, '// Import DOMPurify from CDN - should be loaded globally')
+        .replace(/^import\s+.*hljs.*$/gm, '// Import hljs from CDN - should be loaded globally')
+        // Add hljs global reference comment
+        .replace(/renderer\.code = function/, '// hljs is expected to be loaded globally from CDN\n    renderer.code = function')
         // Fix marked API usage to use marked.parse() instead of marked()
         .replace(/const rawHtml = marked\(/g, 'const rawHtml = marked.parse(')
         // Fix variable declarations with array types

@@ -1,6 +1,7 @@
 // src/utils/dom_parser.ts
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
 
 /**
  * Pre-processes text that might be an escaped JSON string.
@@ -185,10 +186,38 @@ export function convertToHTML(text: string): string {
   // Preprocess the text to handle escaped JSON strings
   text = preprocessText(text);
   
-  // Use marked.js to parse markdown to HTML
+  // Configure marked.js with syntax highlighting
+  const renderer = new marked.Renderer();
+  
+  // Custom code block renderer with highlight.js integration
+  renderer.code = function({text, lang, escaped}: {text: string, lang?: string, escaped?: boolean}) {
+    const code = text;
+    const language = lang;
+    
+    // Check if hljs is available (for browser environments)
+    if (typeof hljs !== 'undefined') {
+      if (language && hljs.getLanguage(language)) {
+        // Language specified and supported
+        const highlighted = hljs.highlight(code, { language }).value;
+        return `<pre class="hljs"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+      } else {
+        // Auto-detect language
+        const highlighted = hljs.highlightAuto(code);
+        const detectedLanguage = highlighted.language || 'plaintext';
+        return `<pre class="hljs"><code class="hljs language-${detectedLanguage}">${highlighted.value}</code></pre>`;
+      }
+    } else {
+      // Fallback when hljs is not available
+      const langClass = language ? ` language-${language}` : '';
+      return `<pre class="hljs"><code class="hljs${langClass}">${code}</code></pre>`;
+    }
+  };
+  
+  // Use marked.js to parse markdown to HTML with custom renderer
   const rawHtml = marked(text, {
     breaks: true, // Convert line breaks to <br>
     gfm: true, // GitHub Flavored Markdown
+    renderer: renderer
   }) as string;
   
   // Apply timestamp processing after marked.js parsing

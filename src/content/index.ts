@@ -543,6 +543,7 @@ function updateSummaryContent(html: string): void {
 async function getTranscript(): Promise<string> {
   try {
     const apiTranscript = await getTranscriptFromApi();
+    console.log("Transcript from API Length:", apiTranscript.length);
     if (apiTranscript && apiTranscript.trim() !== "") {
       return apiTranscript;
     }
