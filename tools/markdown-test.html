@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Conversion Test Page</title>
+    <!-- Import the same CSS used in the extension -->
+    <link rel="stylesheet" href="./summary.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,6 +53,17 @@
             border-radius: 4px;
             max-height: 500px;
             overflow-y: auto;
+        }
+
+        /* Use the same container structure as the extension */
+        .test-summary-container {
+            border: 1px solid #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            font-size: 1.4rem;
+            line-height: 1.4em;
         }
         
         .test-controls {
@@ -242,7 +255,9 @@ Example:
                     </div>
                     <div class="section">
                         <h3>🎨 Converted HTML</h3>
-                        <div class="converted-html">${window.convertToHTML ? window.convertToHTML(markdown) : 'convertToHTML function not loaded'}</div>
+                        <div class="test-summary-container">
+                            <div class="markdown-content">${window.convertToHTML ? window.convertToHTML(markdown) : 'convertToHTML function not loaded'}</div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -263,7 +278,9 @@ Example:
                         </div>
                         <div class="section">
                             <h3>🎨 Converted HTML</h3>
-                            <div class="converted-html">${convertedHtml}</div>
+                            <div class="test-summary-container">
+                                <div class="markdown-content">${convertedHtml}</div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -285,7 +302,7 @@ Example:
             const convertedDiv = document.getElementById('liveConverted');
             
             rawDiv.textContent = input;
-            convertedDiv.innerHTML = window.convertToHTML ? window.convertToHTML(input) : 'convertToHTML function not loaded';
+            convertedDiv.innerHTML = `<div class="test-summary-container"><div class="markdown-content">${window.convertToHTML ? window.convertToHTML(input) : 'convertToHTML function not loaded'}</div></div>`;
             
             outputDiv.style.display = 'grid';
         }
