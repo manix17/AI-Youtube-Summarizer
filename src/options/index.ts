@@ -131,6 +131,42 @@ document.addEventListener("DOMContentLoaded", () => {
     "preset-close-modal"
   ) as HTMLButtonElement;
 
+  // Reset Modal Elements
+  const resetModal = document.getElementById("reset-modal") as HTMLDivElement;
+  const resetModalTitle = document.getElementById(
+    "reset-modal-title"
+  ) as HTMLHeadingElement;
+  const resetModalText = document.getElementById(
+    "reset-modal-text"
+  ) as HTMLParagraphElement;
+  const resetConfirmBtn = document.getElementById(
+    "reset-confirm-btn"
+  ) as HTMLButtonElement;
+  const resetCancelBtn = document.getElementById(
+    "reset-cancel-btn"
+  ) as HTMLButtonElement;
+  const resetCloseModalBtn = document.getElementById(
+    "reset-close-modal"
+  ) as HTMLButtonElement;
+
+  // Delete Modal Elements
+  const deleteModal = document.getElementById("delete-modal") as HTMLDivElement;
+  const deleteModalTitle = document.getElementById(
+    "delete-modal-title"
+  ) as HTMLHeadingElement;
+  const deleteModalText = document.getElementById(
+    "delete-modal-text"
+  ) as HTMLParagraphElement;
+  const deleteConfirmBtn = document.getElementById(
+    "delete-confirm-btn"
+  ) as HTMLButtonElement;
+  const deleteCancelBtn = document.getElementById(
+    "delete-cancel-btn"
+  ) as HTMLButtonElement;
+  const deleteCloseModalBtn = document.getElementById(
+    "delete-close-modal"
+  ) as HTMLButtonElement;
+
   // Usage Statistics Elements
   const totalTokensElement = document.getElementById("total-tokens") as HTMLElement;
   const totalRequestsElement = document.getElementById("total-requests") as HTMLElement;
@@ -248,6 +284,22 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.target === presetModal) closePresetModal();
     });
     presetConfirmBtn?.addEventListener("click", handlePresetConfirm);
+
+    // Reset Modal Listeners
+    resetCloseModalBtn?.addEventListener("click", closeResetModal);
+    resetCancelBtn?.addEventListener("click", closeResetModal);
+    resetModal?.addEventListener("click", (e) => {
+      if (e.target === resetModal) closeResetModal();
+    });
+    resetConfirmBtn?.addEventListener("click", handleResetConfirm);
+
+    // Delete Modal Listeners
+    deleteCloseModalBtn?.addEventListener("click", closeDeleteModal);
+    deleteCancelBtn?.addEventListener("click", closeDeleteModal);
+    deleteModal?.addEventListener("click", (e) => {
+      if (e.target === deleteModal) closeDeleteModal();
+    });
+    deleteConfirmBtn?.addEventListener("click", handleDeleteConfirm);
 
     // Final safety net to save changes before the page unloads
     window.addEventListener("pagehide", saveCurrentProfile);
@@ -379,6 +431,52 @@ document.addEventListener("DOMContentLoaded", () => {
     presetModal?.classList.remove("show");
     presetModalMode = null;
     presetToModify = null;
+  }
+
+  // Reset Modal Functions
+  let profileToReset: string | null = null;
+
+  function showResetModal(profileId: string): void {
+    profileToReset = profileId;
+    const profile = profiles[profileId];
+    resetModalTitle.textContent = `Reset "${profile.name}" Profile`;
+    resetModalText.textContent = `Are you sure you want to reset "${profile.name}"? This action will:`;
+    resetModal?.classList.add("show");
+  }
+
+  function closeResetModal(): void {
+    resetModal?.classList.remove("show");
+    profileToReset = null;
+  }
+
+  function handleResetConfirm(): void {
+    if (profileToReset) {
+      resetProfile(profileToReset);
+      closeResetModal();
+    }
+  }
+
+  // Delete Modal Functions
+  let profileToDelete: string | null = null;
+
+  function showDeleteModal(profileId: string): void {
+    profileToDelete = profileId;
+    const profile = profiles[profileId];
+    deleteModalTitle.textContent = `Delete "${profile.name}" Profile`;
+    deleteModalText.textContent = `Are you sure you want to permanently delete "${profile.name}"?`;
+    deleteModal?.classList.add("show");
+  }
+
+  function closeDeleteModal(): void {
+    deleteModal?.classList.remove("show");
+    profileToDelete = null;
+  }
+
+  function handleDeleteConfirm(): void {
+    if (profileToDelete) {
+      deleteProfile(profileToDelete);
+      closeDeleteModal();
+    }
   }
 
   function showPresetModal(
@@ -731,16 +829,32 @@ document.addEventListener("DOMContentLoaded", () => {
       profileItem.dataset.profile = profileId;
       profileItem.innerHTML = `<span class="profile-name">${profile.name}</span>`;
 
+      // Add actions for all profiles
+      const actionsContainer = document.createElement("div");
+      actionsContainer.className = "profile-actions";
+
+      const resetBtn = document.createElement("button");
+      resetBtn.className = "reset-profile-btn";
+      resetBtn.textContent = "Reset";
+      resetBtn.onclick = (e) => {
+        e.stopPropagation();
+        showResetModal(profileId);
+      };
+      actionsContainer.appendChild(resetBtn);
+
+      // Add delete button only for non-default profiles
       if (profileId !== "default") {
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-profile-btn";
         deleteBtn.textContent = "Delete";
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
-          deleteProfile(profileId);
+          showDeleteModal(profileId);
         };
-        profileItem.appendChild(deleteBtn);
+        actionsContainer.appendChild(deleteBtn);
       }
+
+      profileItem.appendChild(actionsContainer);
 
       profileItem.onclick = () => switchProfile(profileId);
       profileList.appendChild(profileItem);
@@ -844,40 +958,117 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
+  function resetProfile(profileId: string): void {
+    if (!profiles[profileId]) return;
+
+    const profile = profiles[profileId];
+    
+    // Collect all preset keys for deletion
+    const presetIds = Object.keys(profile.presets);
+    
+    // Reset profile to clean slate with default presets (keep the name only)
+    const profileName = profile.name;
+    const newPresets = JSON.parse(JSON.stringify(defaultPrompts.presets));
+    for (const key in newPresets) {
+      newPresets[key].isDefault = true;
+    }
+    
+    profiles[profileId] = {
+      name: profileName,
+      platform: "gemini",
+      model: "gemini-2.5-flash",
+      apiKey: "",
+      presets: newPresets,
+      language: "English",
+      currentPreset: "detailed",
+    };
+
+    // Remove all preset keys from storage (both custom and modified defaults)
+    const presetKeysToRemove = presetIds.map(id => `profile_${profileId}_${id}`);
+    
+    // Also remove any modified default presets from the modifiedPresets tracking
+    presetIds.forEach(presetId => {
+      const presetKey = `${profileId}_${presetId}`;
+      modifiedPresets.delete(presetKey);
+    });
+    
+    if (presetKeysToRemove.length > 0) {
+      chrome.storage.sync.remove(presetKeysToRemove, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error removing preset keys:", chrome.runtime.lastError.message);
+        } else {
+          console.log(`Reset profile ${profileId} and removed ${presetKeysToRemove.length} preset keys`);
+        }
+      });
+    }
+
+    // Save the reset profile
+    saveSettings();
+    
+    // If this is the current profile, reload its data to refresh UI
+    if (currentProfileId === profileId) {
+      // Set initializing flag to prevent save loops
+      isInitializing = true;
+      
+      loadProfileData();
+      populatePresetDropdown();
+      
+      // Clear the initializing flag after UI refresh
+      setTimeout(() => {
+        isInitializing = false;
+      }, 100);
+    }
+    
+    renderProfiles();
+    showStatus(`Profile "${profileName}" has been reset to default settings!`, "success");
+  }
+
   function deleteProfile(profileId: string): void {
     if (profileId === "default" || !profiles[profileId]) return;
 
     // Collect preset IDs for cleanup
     const presetIds = Object.keys(profiles[profileId].presets);
+    const profileName = profiles[profileId].name;
 
     // Remove from in-memory object
     delete profiles[profileId];
 
-    // Remove profile from storage and cleanup preset keys
+    // Clean up modifiedPresets tracking for this profile
+    presetIds.forEach(presetId => {
+      const presetKey = `${profileId}_${presetId}`;
+      modifiedPresets.delete(presetKey);
+    });
+
+    // Switch to default profile if we're deleting the current profile
+    if (currentProfileId === profileId) {
+      currentProfileId = "default";
+    }
+
+    // Immediately save the updated profiles list to storage
+    saveSettings();
+
+    // Remove individual profile and preset keys from storage
     const keysToRemove = [`profile_${profileId}`, ...presetIds.map(id => `profile_${profileId}_${id}`)];
     chrome.storage.sync.remove(keysToRemove, async () => {
       if (chrome.runtime.lastError) {
         console.error(
-          "Error deleting profile from storage:",
+          "Error deleting profile keys from storage:",
           chrome.runtime.lastError.message
         );
       } else {
         console.log(`Deleted profile ${profileId} and ${presetIds.length} preset keys`);
-        
-        // Update profile_ids list and current profile after successful deletion
-        if (currentProfileId === profileId) {
-          switchProfile("default"); // This will call saveSettings
-        } else {
-          saveSettings(); // We need to save the updated profile_ids list
-        }
         
         // Update storage usage statistics after successful deletion
         await updateUsageStatistics();
       }
     });
 
+    // Update UI immediately
     renderProfiles();
-    showStatus("Profile deleted", "success");
+    if (currentProfileId === "default") {
+      loadProfileData(); // Reload profile data if we switched to default
+    }
+    showStatus(`Profile "${profileName}" deleted successfully!`, "success");
   }
 
   function saveCurrentProfile(): void {
