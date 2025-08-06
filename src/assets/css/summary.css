@@ -291,35 +291,59 @@
 }
 
 /* Code and technical terms */
-.markdown-content code,
-.markdown-content .inline-code {
+.markdown-content code {
   background: #f7fafc;
   color: #e53e3e;
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: 4px;
-  font-family: "Monaco", "Menlo", monospace;
+  font-family: "Monaco", "Menlo", "Consolas", "Courier New", monospace;
   font-size: 0.9em;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
 }
 
-/* Syntax highlighting for code blocks */
-.markdown-content pre.hljs {
+/* Code blocks - enhanced styling */
+.markdown-content pre {
   background: #f8f9fa;
   border: 1px solid #e9ecef;
   border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
+  padding: 20px;
+  margin: 20px 0;
   overflow-x: auto;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.875em;
-  line-height: 1.5;
+  font-size: 0.85em;
+  line-height: 1.6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
-.markdown-content pre.hljs code {
+.markdown-content pre::before {
+  content: "Code";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 0.75em;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.markdown-content pre code {
   background: none;
-  color: inherit;
+  color: #374151;
   padding: 0;
   border-radius: 0;
   font-size: inherit;
+  border: none;
+  font-weight: 400;
+  display: block;
+}
+
+/* Enhanced syntax highlighting */
+.markdown-content pre.hljs {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
 }
 
 /* Dark Mode Styles */
@@ -404,20 +428,30 @@
   color: #8b94f9;
 }
 
-#summary-container.dark .markdown-content code,
-#summary-container.dark .markdown-content .inline-code {
-  background: #333;
-  color: #ff8a8a;
+#summary-container.dark .markdown-content code {
+  background: #374151;
+  color: #fca5a5;
+  border-color: #4b5563;
+}
+
+#summary-container.dark .markdown-content pre {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#summary-container.dark .markdown-content pre::before {
+  color: #9ca3af;
+}
+
+#summary-container.dark .markdown-content pre code {
+  background: none;
+  color: #e5e7eb;
 }
 
 #summary-container.dark .markdown-content pre.hljs {
-  background: #2d3748;
-  border-color: #4a5568;
-}
-
-#summary-container.dark .markdown-content pre.hljs code {
-  background: none;
-  color: #e2e8f0;
+  background: #1f2937;
+  border-color: #374151;
 }
 
 /* Dark theme for UI inputs - following YouTube's dark theme */
