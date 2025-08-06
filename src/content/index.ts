@@ -103,6 +103,27 @@ function injectSummarizeUI(): void {
 
     injectCss("assets/css/summary.css");
     setupDarkModeObserver();
+    
+    // Force apply current theme immediately
+    applyCurrentTheme();
+  }
+}
+
+/**
+ * Apply current theme to UI elements immediately
+ */
+function applyCurrentTheme(): void {
+  const targetNode = document.documentElement;
+  const isDarkMode = targetNode.hasAttribute("dark");
+  const summaryContainer = document.getElementById("summary-container");
+  const uiContainer = document.getElementById("summarize-ui-container");
+  
+  
+  if (summaryContainer) {
+    summaryContainer.classList.toggle("dark", isDarkMode);
+  }
+  if (uiContainer) {
+    uiContainer.classList.toggle("dark", isDarkMode);
   }
 }
 
@@ -116,32 +137,13 @@ function setupDarkModeObserver(): void {
   const callback = (mutationsList: MutationRecord[]) => {
     for (const mutation of mutationsList) {
       if (mutation.type === "attributes" && mutation.attributeName === "dark") {
-        const isDarkMode = targetNode.hasAttribute("dark");
-        const summaryContainer = document.getElementById("summary-container");
-        const uiContainer = document.getElementById("summarize-ui-container");
-        if (summaryContainer) {
-          summaryContainer.classList.toggle("dark", isDarkMode);
-        }
-        if (uiContainer) {
-          uiContainer.classList.toggle("dark", isDarkMode);
-        }
+        applyCurrentTheme();
       }
     }
   };
 
   const observer = new MutationObserver(callback);
   observer.observe(targetNode, config);
-
-  // Initial check
-  const isDarkMode = targetNode.hasAttribute("dark");
-  const summaryContainer = document.getElementById("summary-container");
-  const uiContainer = document.getElementById("summarize-ui-container");
-  if (summaryContainer) {
-    summaryContainer.classList.toggle("dark", isDarkMode);
-  }
-  if (uiContainer) {
-    uiContainer.classList.toggle("dark", isDarkMode);
-  }
 }
 
 function handleDownloadSummary(): void {
