@@ -1,0 +1,24 @@
+{
+  "name": "yt-summarize-tools",
+  "version": "1.0.0",
+  "description": "Development tools and server for YouTube Summarizer",
+  "main": "save-server.js",
+  "scripts": {
+    "start": "node save-server.js",
+    "dev": "nodemon save-server.js",
+    "serve": "npm start",
+    "tools": "npm start && echo 'Dev server started! Visit http://localhost:3001 for tools'",
+    "prompt-optimizer": "npm start && echo 'Prompt Optimizer: http://localhost:3001/tools/prompt_optimizer.html'",
+    "markdown-test": "npm start && echo 'Markdown Test: http://localhost:3001/tools/markdown-test.html'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["youtube", "summarizer", "tools", "dev-server"],
+  "author": "",
+  "license": "MIT"
+}

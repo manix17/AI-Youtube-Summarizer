@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Summarizer - Prompt Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 5px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: calc(100vh - 10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .file-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-input input[type="file"] {
+            padding: 6px 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .preset-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preset-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 200px;
+            background: white;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn.save {
+            background: #28a745;
+        }
+
+        .btn.save:hover {
+            background: #218838;
+        }
+
+        .btn.reset {
+            background: #dc3545;
+        }
+
+        .btn.reset:hover {
+            background: #c82333;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-left: auto;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .editor-meta {
+            padding: 8px 15px;
+            background: #fafbfc;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .meta-item input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .meta-item input[type="number"] {
+            width: 80px;
+        }
+
+        .meta-item input[type="text"] {
+            width: 200px;
+        }
+
+        .editor-content {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        .prompt-sections {
+            flex: 1;
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .prompt-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .section-stats {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .prompt-textarea {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            line-height: 1.3;
+            resize: none;
+            transition: border-color 0.3s;
+            min-height: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .prompt-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .message {
+            padding: 8px 12px;
+            margin: 4px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 1024px) {
+            .prompt-sections {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats {
+                margin-left: 0;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Prompt Optimizer</h1>
+            <p>Edit and optimize your YouTube summarizer prompts with maximum viewing area</p>
+        </div>
+
+        <div class="controls">
+            <div class="file-input">
+                <label for="file-input">📁 Load:</label>
+                <input type="file" id="file-input" accept=".json" />
+            </div>
+            <button class="btn" id="load-default-btn">🔄 Load Default</button>
+            
+            <div class="preset-selector">
+                <label for="preset-select">🎯 Preset:</label>
+                <select id="preset-select" disabled>
+                    <option value="">Select a preset...</option>
+                </select>
+            </div>
+            
+            <button class="btn save" id="save-btn" disabled>💾 Save to Original</button>
+            <button class="btn reset" id="reset-btn" disabled>↺ Reset</button>
+            
+            <div class="stats">
+                <div class="stat">
+                    <span>📊 Total:</span>
+                    <span class="stat-value" id="total-size">0 KiB</span>
+                </div>
+                <div class="stat">
+                    <span>📝 Chars:</span>
+                    <span class="stat-value" id="total-chars">0</span>
+                </div>
+                <div class="stat">
+                    <span>🎯 Presets:</span>
+                    <span class="stat-value" id="preset-count">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="messages"></div>
+
+        <div class="editor-meta" id="editor-meta" style="display: none;">
+            <div class="meta-item">
+                <label>🌡️ Temperature:</label>
+                <input type="number" id="temperature-input" min="0" max="2" step="0.1" value="0.3">
+            </div>
+            <div class="meta-item">
+                <label>📝 Name:</label>
+                <input type="text" id="name-input" value="">
+            </div>
+        </div>
+
+        <div class="editor-content">
+            <div id="editor-main" class="empty-state">
+                <div class="empty-icon">✨</div>
+                <p>Load prompts.json and select a preset to start editing</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PromptOptimizer {
+            constructor() {
+                this.prompts = null;
+                this.currentPreset = null;
+                this.originalPrompts = null;
+                this.hasUnsavedChanges = false;
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('file-input').addEventListener('change', this.handleFileLoad.bind(this));
+                document.getElementById('load-default-btn').addEventListener('click', this.loadDefaultPrompts.bind(this));
+                document.getElementById('preset-select').addEventListener('change', this.handlePresetChange.bind(this));
+                document.getElementById('save-btn').addEventListener('click', this.savePrompts.bind(this));
+                document.getElementById('reset-btn').addEventListener('click', this.resetChanges.bind(this));
+            }
+
+            showMessage(text, type = 'info') {
+                const messagesContainer = document.getElementById('messages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                messageDiv.textContent = text;
+                messagesContainer.appendChild(messageDiv);
+
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 5000);
+            }
+
+            async loadDefaultPrompts() {
+                try {
+                    const response = await fetch('../src/assets/prompts.json');
+                    if (!response.ok) {
+                        throw new Error('Failed to load default prompts.json');
+                    }
+                    const data = await response.json();
+                    this.loadPrompts(data);
+                    this.showMessage('Default prompts loaded successfully!', 'success');
+                } catch (error) {
+                    this.showMessage(`Error loading default prompts: ${error.message}`, 'error');
+                }
+            }
+
+            handleFileLoad(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (!file.name.endsWith('.json')) {
+                    this.showMessage('Please select a valid JSON file', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        this.loadPrompts(data);
+                        this.showMessage(`Successfully loaded ${file.name}!`, 'success');
+                    } catch (error) {
+                        this.showMessage(`Error parsing JSON: ${error.message}`, 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            loadPrompts(data) {
+                this.prompts = data;
+                this.originalPrompts = JSON.parse(JSON.stringify(data)); // Deep clone
+                this.hasUnsavedChanges = false;
+                this.currentPreset = null;
+                this.populatePresetDropdown();
+                this.updateStats();
+                this.updateButtons();
+                this.renderEmptyEditor();
+            }
+
+            populatePresetDropdown() {
+                const presetSelect = document.getElementById('preset-select');
+                presetSelect.innerHTML = '<option value="">Select a preset...</option>';
+
+                if (!this.prompts || !this.prompts.presets) {
+                    presetSelect.disabled = true;
+                    return;
+                }
+
+                Object.keys(this.prompts.presets).forEach(key => {
+                    const preset = this.prompts.presets[key];
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${preset.name || key}`;
+                    presetSelect.appendChild(option);
+                });
+
+                presetSelect.disabled = false;
+            }
+
+            handlePresetChange(event) {
+                const selectedKey = event.target.value;
+                if (selectedKey) {
+                    this.selectPreset(selectedKey);
+                } else {
+                    this.renderEmptyEditor();
+                }
+            }
+
+            selectPreset(key) {
+                this.currentPreset = key;
+                this.renderEditor();
+            }
+
+            renderEditor() {
+                const editorMain = document.getElementById('editor-main');
+                const editorMeta = document.getElementById('editor-meta');
+                const preset = this.prompts.presets[this.currentPreset];
+
+                if (!preset) {
+                    this.renderEmptyEditor();
+                    return;
+                }
+
+                // Show and populate meta section
+                editorMeta.style.display = 'flex';
+                document.getElementById('temperature-input').value = preset.temperature || 0.3;
+                document.getElementById('name-input').value = preset.name || '';
+
+                // Render side-by-side editor
+                editorMain.innerHTML = `
+                    <div class="prompt-sections">
+                        <div class="prompt-section">
+                            <div class="section-header">
+                                <div class="section-title">🤖 System Prompt</div>
+                                <div class="section-stats" id="system-stats">
+                                    ${(preset.system_prompt || '').length.toLocaleString()} chars, ${((preset.system_prompt || '').length / 1024).toFixed(1)} KiB
+                                </div>
+                            </div>
+                            <textarea class="prompt-textarea" id="system-prompt" placeholder="Enter system prompt...">${preset.system_prompt || ''}</textarea>
+                        </div>
+                        <div class="prompt-section">
+                            <div class="section-header">
+                                <div class="section-title">👤 User Prompt</div>
+                                <div class="section-stats" id="user-stats">
+                                    ${(preset.user_prompt || '').length.toLocaleString()} chars, ${((preset.user_prompt || '').length / 1024).toFixed(1)} KiB
+                                </div>
+                            </div>
+                            <textarea class="prompt-textarea" id="user-prompt" placeholder="Enter user prompt...">${preset.user_prompt || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners for real-time updates
+                this.addEditorEventListeners();
+            }
+
+            renderEmptyEditor() {
+                const editorMain = document.getElementById('editor-main');
+                const editorMeta = document.getElementById('editor-meta');
+                
+                editorMeta.style.display = 'none';
+                editorMain.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">✨</div>
+                        <p>Load prompts.json and select a preset to start editing</p>
+                    </div>
+                `;
+            }
+
+            addEditorEventListeners() {
+                const temperatureInput = document.getElementById('temperature-input');
+                const nameInput = document.getElementById('name-input');
+                const systemPrompt = document.getElementById('system-prompt');
+                const userPrompt = document.getElementById('user-prompt');
+
+                const updateContent = () => {
+                    if (!this.currentPreset) return;
+
+                    // Update prompts data
+                    this.prompts.presets[this.currentPreset].temperature = parseFloat(temperatureInput.value);
+                    this.prompts.presets[this.currentPreset].name = nameInput.value;
+                    this.prompts.presets[this.currentPreset].system_prompt = systemPrompt.value;
+                    this.prompts.presets[this.currentPreset].user_prompt = userPrompt.value;
+
+                    // Update stats
+                    this.updatePromptStats();
+                    this.updateStats();
+                    this.populatePresetDropdown();
+                    document.getElementById('preset-select').value = this.currentPreset; // Maintain selection
+
+                    // Mark as changed
+                    this.hasUnsavedChanges = true;
+                    this.updateButtons();
+                };
+
+                temperatureInput.addEventListener('input', updateContent);
+                nameInput.addEventListener('input', updateContent);
+                systemPrompt.addEventListener('input', updateContent);
+                userPrompt.addEventListener('input', updateContent);
+            }
+
+            updatePromptStats() {
+                const systemPrompt = document.getElementById('system-prompt');
+                const userPrompt = document.getElementById('user-prompt');
+                const systemStats = document.getElementById('system-stats');
+                const userStats = document.getElementById('user-stats');
+
+                if (systemPrompt && systemStats) {
+                    const length = systemPrompt.value.length;
+                    systemStats.textContent = `${length.toLocaleString()} chars, ${(length / 1024).toFixed(1)} KiB`;
+                }
+
+                if (userPrompt && userStats) {
+                    const length = userPrompt.value.length;
+                    userStats.textContent = `${length.toLocaleString()} chars, ${(length / 1024).toFixed(1)} KiB`;
+                }
+            }
+
+            updateStats() {
+                if (!this.prompts || !this.prompts.presets) {
+                    document.getElementById('total-size').textContent = '0 KiB';
+                    document.getElementById('total-chars').textContent = '0';
+                    document.getElementById('preset-count').textContent = '0';
+                    return;
+                }
+
+                let totalChars = 0;
+                const presetCount = Object.keys(this.prompts.presets).length;
+
+                Object.values(this.prompts.presets).forEach(preset => {
+                    totalChars += (preset.system_prompt || '').length;
+                    totalChars += (preset.user_prompt || '').length;
+                    totalChars += (preset.name || '').length;
+                });
+
+                // Add JSON overhead estimation
+                const jsonSize = JSON.stringify(this.prompts).length;
+
+                document.getElementById('total-size').textContent = `${(jsonSize / 1024).toFixed(1)} KiB`;
+                document.getElementById('total-chars').textContent = totalChars.toLocaleString();
+                document.getElementById('preset-count').textContent = presetCount.toString();
+            }
+
+            updateButtons() {
+                const saveBtn = document.getElementById('save-btn');
+                const resetBtn = document.getElementById('reset-btn');
+
+                saveBtn.disabled = !this.hasUnsavedChanges;
+                resetBtn.disabled = !this.hasUnsavedChanges;
+            }
+
+            async savePrompts() {
+                if (!this.prompts) {
+                    this.showMessage('No prompts to save', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('http://localhost:3001/save-prompts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(this.prompts)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.originalPrompts = JSON.parse(JSON.stringify(this.prompts));
+                        this.hasUnsavedChanges = false;
+                        this.updateButtons();
+                        
+                        let message = result.message || 'Prompts saved to original file successfully!';
+                        if (result.normalized) {
+                            message += ` Applied: ${result.encoding} encoding, ${result.lineEndings} line endings, text normalization.`;
+                        }
+                        this.showMessage(message, 'success');
+                        
+                        // Show additional normalization info if available
+                        if (result.normalized) {
+                            console.log('🔧 Normalization applied:', {
+                                encoding: result.encoding,
+                                lineEndings: result.lineEndings,
+                                fileSize: result.fileSize,
+                                presetCount: result.presetCount
+                            });
+                        }
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Failed to save prompts');
+                    }
+                } catch (error) {
+                    this.showMessage(`Error: ${error.message}. Make sure the save server is running.`, 'error');
+                    this.showMessage('Run "node save-server.js" in the tools directory first.', 'info');
+                }
+            }
+
+            resetChanges() {
+                if (!this.originalPrompts) {
+                    this.showMessage('No changes to reset', 'error');
+                    return;
+                }
+
+                if (confirm('Are you sure you want to reset all changes? This will lose all unsaved modifications.')) {
+                    this.prompts = JSON.parse(JSON.stringify(this.originalPrompts));
+                    this.hasUnsavedChanges = false;
+                    this.populatePresetDropdown();
+                    if (this.currentPreset) {
+                        document.getElementById('preset-select').value = this.currentPreset;
+                        this.renderEditor();
+                    }
+                    this.updateStats();
+                    this.updateButtons();
+                    this.showMessage('Changes reset successfully!', 'success');
+                }
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PromptOptimizer();
+        });
+
+        // Warn user about unsaved changes when leaving
+        window.addEventListener('beforeunload', (e) => {
+            const optimizer = window.promptOptimizer || { hasUnsavedChanges: false };
+            if (optimizer.hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>

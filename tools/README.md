@@ -6,6 +6,72 @@ This folder contains development and testing utilities for the YouTube Summarize
 
 - **`markdown-test.html`** - Visual test page for the markdown conversion functionality
 - **`dom-parser-module.js`** - Auto-generated JavaScript version of `src/utils/dom_parser.ts`
+- **`prompt_optimizer.html`** - **NEW** Interactive tool for editing and optimizing prompts
+- **`save-server.js`** - Node.js server for saving prompts directly to original file
+- **`package.json`** - Dependencies for the save server
+
+## 🚀 Prompt Optimizer Tool
+
+A comprehensive web-based tool for editing and optimizing your YouTube summarizer prompts with maximum viewing area.
+
+### Features
+
+✨ **Modern Interface:**
+- Dropdown selection for all available presets
+- Side-by-side layout for system and user prompts
+- Maximum text area size for optimal content viewing
+- Real-time character count and file size statistics
+- Responsive design that works on all screen sizes
+
+🎯 **Smart Editing:**
+- Live preview of character counts and file sizes
+- Temperature and name editing for each preset
+- Unsaved changes detection with confirmation dialogs
+- Reset functionality to revert changes
+
+💾 **Direct File Saving:**
+- Saves directly to the original `../src/assets/prompts.json`
+- Automatic backup creation before saving
+- No need to manually copy files
+
+### Quick Start
+
+1. **Start the save server:**
+   ```bash
+   cd tools
+   npm install
+   npm start
+   ```
+
+2. **Open the optimizer:**
+   Open `prompt_optimizer.html` in your browser
+
+3. **Load prompts:**
+   Click "🔄 Load Default" to load current prompts from the project
+
+4. **Edit prompts:**
+   - Select a preset from the dropdown
+   - Edit system and user prompts side-by-side
+   - Adjust temperature and name as needed
+
+5. **Save changes:**
+   Click "💾 Save to Original" to write directly to prompts.json
+
+### Usage Tips
+
+- **Maximum Viewing:** The layout maximizes text area space for comfortable editing of long prompts
+- **Real-time Stats:** Watch character counts and file sizes update as you type
+- **Backup Safety:** The server automatically creates timestamped backups before saving
+- **Hot Reload:** Changes are reflected immediately in the extension after saving
+
+### Server Endpoints
+
+- `GET /health` - Health check endpoint
+- `POST /save-prompts` - Save prompts to original file
+
+The save server runs on `http://localhost:3001` and provides CORS headers for browser access.
+
+---
 
 ## Usage
 

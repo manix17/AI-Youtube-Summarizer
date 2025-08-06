@@ -11,9 +11,9 @@
     "build": "webpack --mode=production --config webpack.config.js",
     "lint": "tsc --noEmit",
     "dev": "webpack --mode=development --watch --config webpack.config.js",
-    "sync-parser": "node scripts/sync-dom-parser.js",
-    "dev:full": "npm run sync-parser && concurrently \"npm run dev\" \"npm run watch:parser\"",
-    "watch:parser": "chokidar \"src/utils/dom_parser.ts\" -c \"npm run sync-parser\""
+    "sync-parser": "node tools/sync-dom-parser.js",
+    "watch:parser": "chokidar \"src/utils/dom_parser.ts\" -c \"npm run sync-parser\"",
+    "tools": "cd tools && npm install && npm start"
   },
   "keywords": [],
   "author": "",
