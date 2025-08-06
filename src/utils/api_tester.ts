@@ -1,4 +1,5 @@
 import type { TestResult, Model, ApiErrorResponse } from "../types";
+import platformConfigs from "../assets/platform_configs.json";
 
 export async function testOpenRouterApiKey(apiKey: string): Promise<TestResult> {
   if (!apiKey || !apiKey.startsWith("sk-or-")) {
@@ -65,6 +66,7 @@ export async function testAnthropicApiKey(apiKey: string): Promise<TestResult> {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
+        "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify({
         model: "claude-3-haiku-20240307",
@@ -79,7 +81,14 @@ export async function testAnthropicApiKey(apiKey: string): Promise<TestResult> {
       (response.status === 400 &&
         responseData.error?.type !== "authentication_error")
     ) {
-      return { success: true };
+      // Anthropic doesn't have a models endpoint, so return predefined models
+      // Load models from platform_configs.json
+      const anthropicConfig = platformConfigs.anthropic;
+      const models: Model[] = anthropicConfig.models.map((model) => ({
+        name: model.value,
+        displayName: model.label,
+      }));
+      return { success: true, models: models };
     } else if (
       response.status === 401 ||
       responseData.error?.type === "authentication_error"

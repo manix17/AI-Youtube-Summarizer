@@ -14,6 +14,16 @@ import type {
   SummaryResult,
   TokenUsageResult,
 } from "../types";
+import platformConfigs from "../assets/platform_configs.json";
+
+/**
+ * Maps simplified Anthropic model names to their full API model names.
+ * Uses the apiName field from platform_configs.json if available.
+ */
+function getAnthropicApiModelName(model: string): string {
+  const anthropicModel = platformConfigs.anthropic.models.find(m => m.value === model);
+  return anthropicModel?.apiName || model;
+}
 
 /**
  * Returns the API configuration for a given platform.
@@ -67,7 +77,7 @@ function buildRequestPayload(
       } as OpenAIRequest;
     case "anthropic":
       return {
-        model: model,
+        model: getAnthropicApiModelName(model),
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
         max_tokens: 4096,
@@ -115,6 +125,7 @@ function buildRequestHeaders(
     case "anthropic":
       headers["x-api-key"] = apiKey;
       headers["anthropic-version"] = "2023-06-01";
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
       break;
     case "gemini":
       // API key is sent in the URL for Gemini
