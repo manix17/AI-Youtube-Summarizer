@@ -97,6 +97,13 @@ function manualConversion() {
         .replace(/:\s*number\[\]/g, '')
         // Remove TypeScript non-null assertion operator
         .replace(/\.pop\(\)!/g, '.pop()')
+        // Remove TypeScript 'as' type assertions
+        .replace(/\s+as\s+\w+/g, '')
+        // Convert ES6 imports to browser-compatible format
+        .replace(/^import\s+\{\s*marked\s*\}\s+from\s+['"]marked['"];?\s*$/gm, '// Import marked from CDN - should be loaded globally')
+        .replace(/^import\s+.*DOMPurify.*$/gm, '// Import DOMPurify from CDN - should be loaded globally')
+        // Fix marked API usage to use marked.parse() instead of marked()
+        .replace(/const rawHtml = marked\(/g, 'const rawHtml = marked.parse(')
         // Fix variable declarations with array types
         .replace(/let\s+(\w+)= \[\]/g, 'let $1 = []');
 
