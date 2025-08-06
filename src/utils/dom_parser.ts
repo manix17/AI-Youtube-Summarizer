@@ -31,28 +31,47 @@ function processInlineFormatting(text: string): string {
 }
 
 /**
- * Converts timestamp-like strings (e.g., [01:23]) into clickable links.
+ * Converts timestamp-like strings (e.g., [01:23], (1:23, 2:45), [1:23-2:45]) into clickable links.
+ * Creates separate clickable links for each individual timestamp and removes brackets.
  * @param {string} text - The text to process.
  * @returns {string} The text with HTML links for timestamps.
  */
 function linkifyTimestamps(text: string): string {
-  const timestampRegex =
-    /[[\](\(]((\d{1,2}:\d{2}(?::\d{2})?)(?:(?:[-\s]|\s*,\s*)\d{1,2}:\d{2}(?::\d{2})?)*)[[\])]/g;
-  return text.replace(timestampRegex, (match) => {
-    const startTimeMatch = match.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
-    if (!startTimeMatch) return match;
-
-    const startTime = startTimeMatch[0];
-    const parts = startTime.split(":").map(Number);
-    let seconds = 0;
-    if (parts.length === 3) {
-      seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-    } else {
-      seconds = parts[0] * 60 + parts[1];
+  // First, find patterns with brackets/parentheses containing timestamps
+  const containerRegex = /[[\(]([^[\])]*\d{1,2}:\d{2}(?::\d{2})?[^[\]()]*)[)\]]/g;
+  
+  return text.replace(containerRegex, (match) => {
+    // Extract the content inside brackets/parentheses
+    const content = match.slice(1, -1); // Remove first and last character (brackets/parentheses)
+    
+    // Find all individual timestamps within the content
+    const timestampRegex = /\d{1,2}:\d{2}(?::\d{2})?/g;
+    const timestamps = content.match(timestampRegex);
+    
+    if (!timestamps || timestamps.length === 0) return match;
+    
+    // Convert each timestamp to a clickable link
+    const timestampLinks = timestamps.map(timestamp => {
+      const parts = timestamp.split(":").map(Number);
+      let seconds = 0;
+      if (parts.length === 3) {
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else {
+        seconds = parts[0] * 60 + parts[1];
+      }
+      
+      return `<a href="javascript:void(0)" data-seconds="${seconds}" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">${timestamp}</a>`;
+    });
+    
+    // Determine separator based on original content
+    let separator = " ";
+    if (content.includes(",")) {
+      separator = ", ";
+    } else if (content.includes(" - ") || content.includes("-")) {
+      separator = " - ";
     }
-
-    match = match.replace(/[(]/g, "[").replace(/[)]/g, "]");
-    return `<a href="javascript:void(0)" data-seconds="${seconds}" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">${match}</a>`;
+    
+    return timestampLinks.join(separator);
   });
 }
 

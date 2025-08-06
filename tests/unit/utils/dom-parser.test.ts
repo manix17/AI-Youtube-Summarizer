@@ -43,6 +43,9 @@ describe("DOM Parser Utils", () => {
       const result = convertToHTML(text);
       expect(result).toContain('class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color"');
       expect(result).toContain('data-seconds="83"');
+      // Should remove brackets
+      expect(result).not.toContain('[1:23]');
+      expect(result).toContain('>1:23</a>');
     });
 
     it("should handle multiple timestamp formats", () => {
@@ -100,6 +103,63 @@ describe("DOM Parser Utils", () => {
       expect(result).toContain("</ol>");
       expect(result).toContain("<ul>");
       expect(result).toContain("</ul>");
+    });
+
+    it("should handle multiple timestamps within brackets with comma separation", () => {
+      const text = "Key points [1:23, 2:45] discussed here";
+      const result = convertToHTML(text);
+      // Should create separate clickable links
+      expect(result).toContain('data-seconds="83"');
+      expect(result).toContain('data-seconds="165"');
+      expect(result).toContain('>1:23</a>');
+      expect(result).toContain('>2:45</a>');
+      // Should remove brackets and maintain comma separation
+      expect(result).not.toContain('[');
+      expect(result).not.toContain(']');
+      expect(result).toContain('1:23</a>, <a');
+    });
+
+    it("should handle multiple timestamps within brackets with dash separation", () => {
+      const text = "Time range [1:23-2:45] covers this topic";
+      const result = convertToHTML(text);
+      // Should create separate clickable links
+      expect(result).toContain('data-seconds="83"');
+      expect(result).toContain('data-seconds="165"');
+      expect(result).toContain('>1:23</a>');
+      expect(result).toContain('>2:45</a>');
+      // Should remove brackets and maintain dash separation
+      expect(result).not.toContain('[');
+      expect(result).not.toContain(']');
+      expect(result).toContain('1:23</a> - <a');
+    });
+
+    it("should handle multiple timestamps within parentheses", () => {
+      const text = "Important segments (1:23, 2:45, 5:30) need attention";
+      const result = convertToHTML(text);
+      // Should create separate clickable links for all timestamps
+      expect(result).toContain('data-seconds="83"');
+      expect(result).toContain('data-seconds="165"');
+      expect(result).toContain('data-seconds="330"');
+      expect(result).toContain('>1:23</a>');
+      expect(result).toContain('>2:45</a>');
+      expect(result).toContain('>5:30</a>');
+      // Should remove parentheses around timestamps
+      expect(result).not.toContain('(1:23');
+      expect(result).not.toContain('5:30)');
+      // Should maintain comma separation
+      expect(result).toContain('1:23</a>, <a');
+      expect(result).toContain('2:45</a>, <a');
+    });
+
+    it("should handle timestamps with hours format", () => {
+      const text = "Long discussion [1:23:45, 1:25:30] about complex topics";
+      const result = convertToHTML(text);
+      // 1:23:45 = 1*3600 + 23*60 + 45 = 5025 seconds
+      // 1:25:30 = 1*3600 + 25*60 + 30 = 5130 seconds
+      expect(result).toContain('data-seconds="5025"');
+      expect(result).toContain('data-seconds="5130"');
+      expect(result).toContain('>1:23:45</a>');
+      expect(result).toContain('>1:25:30</a>');
     });
   });
 });
