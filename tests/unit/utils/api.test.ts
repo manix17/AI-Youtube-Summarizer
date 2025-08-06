@@ -16,8 +16,18 @@ describe("API Utils", () => {
   const createMockProfile = (platform: string): Profile => ({
     name: "Test Profile",
     platform: platform as any,
-    model: platform === "openai" ? "gpt-4" : platform === "anthropic" ? "claude-3-5-sonnet" : "gemini-2.5-flash",
-    apiKey: "test-key",
+    models: {
+      openai: "gpt-4",
+      anthropic: "claude-3-5-sonnet",
+      gemini: "models/gemini-2.5-flash",
+      openrouter: "openrouter/auto",
+    },
+    apiKeys: {
+      openai: "test-openai-key",
+      anthropic: "test-anthropic-key",
+      gemini: "test-gemini-key",
+      openrouter: "test-openrouter-key",
+    },
     language: "English",
     presets: {
       detailed: {

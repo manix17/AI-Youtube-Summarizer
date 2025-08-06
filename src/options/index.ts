@@ -29,8 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
     default: {
       name: "Default",
       platform: "gemini",
-      model: "gemini-2.5-flash",
-      apiKey: "",
+      models: {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      },
+      apiKeys: {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      },
       presets: {},
       language: "English",
       currentPreset: "detailed",
@@ -193,6 +203,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // Flag to prevent automatic saves during initialization - start as true to prevent saves before init
   let isInitializing = true;
 
+  // Helper function to get default models from platform configs
+  function getDefaultModels(): Record<Platform, string> {
+    const defaultModels: Record<Platform, string> = {} as Record<Platform, string>;
+    
+    for (const platform of ["openai", "anthropic", "gemini", "openrouter"] as Platform[]) {
+      const config = platformConfigs[platform];
+      if (config && config.models && config.models.length > 0) {
+        defaultModels[platform] = config.models[0].value;
+      } else {
+        // Fallback values in case configs aren't loaded yet
+        switch (platform) {
+          case "openai":
+            defaultModels[platform] = "gpt-4";
+            break;
+          case "anthropic":
+            defaultModels[platform] = "claude-3-sonnet";
+            break;
+          case "gemini":
+            defaultModels[platform] = "models/gemini-2.5-flash";
+            break;
+          case "openrouter":
+            defaultModels[platform] = "openrouter/auto";
+            break;
+        }
+      }
+    }
+    
+    return defaultModels;
+  }
+
   async function initialize(): Promise<void> {
     // Clear the modifiedPresets set at the start of each session
     modifiedPresets.clear();
@@ -204,6 +244,20 @@ document.addEventListener("DOMContentLoaded", () => {
       ]);
       platformConfigs = await platformRes.json();
       defaultPrompts = await promptsRes.json();
+      
+      // Initialize default models for all profiles after platform configs are loaded
+      for (const profileId in profiles) {
+        const profile = profiles[profileId];
+        const defaultModels = getDefaultModels();
+        
+        // Only set default models if they're empty (preserve existing user selections)
+        for (const platform of ["openai", "anthropic", "gemini", "openrouter"] as Platform[]) {
+          if (!profile.models[platform]) {
+            profile.models[platform] = defaultModels[platform];
+          }
+        }
+      }
+      
       await loadSettings();
       setupEventListeners();
       renderProfiles();
@@ -548,19 +602,35 @@ document.addEventListener("DOMContentLoaded", () => {
   function handlePlatformChange(): void {    
     updatePlatformBadge();
     
-    // Clear API key field and in-memory profile
-    apiKeyInput.value = "";
-    profiles[currentProfileId].apiKey = "";
+    // Save only the platform change, not the model (which belongs to the old platform)
+    const profile = profiles[currentProfileId];
+    if (profile) {
+      profile.platform = platformSelect.value as Platform;
+      // Save just the platform change, without calling saveCurrentProfile() 
+      // which would incorrectly save the old platform's model to the new platform
+      saveSettings();
+    }
+    
+    // Load the API key for the selected platform
+    const newPlatform = platformSelect.value as Platform;
+    const savedApiKey = profiles[currentProfileId].apiKeys[newPlatform] || "";
+    
+    apiKeyInput.value = savedApiKey;
 
-    modelSelect.innerHTML =
-      '<option value="">-- Test API Key to load models --</option>';
-    modelSelect.disabled = true;
-    saveCurrentProfile();
+    if (savedApiKey) {
+      // If API key exists for this platform, test it to load models
+      testApiKey(true);
+    } else {
+      // No API key for this platform, show the "Test API Key" message
+      modelSelect.innerHTML = '<option value="">-- Test API Key to load models --</option>';
+      modelSelect.disabled = true;
+    }
   }
   function handleApiKeyInput(): void {
     const profile = profiles[currentProfileId];
     if (profile) {
-      profile.apiKey = apiKeyInput.value.trim();
+      const currentPlatform = profile.platform;
+      profile.apiKeys[currentPlatform] = apiKeyInput.value.trim();
       saveSettings();
     }
   }
@@ -756,7 +826,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function populateModelDropdown(apiModels: Model[] = []): void {
     const platform = platformSelect.value as Platform;
     const config = platformConfigs[platform];
-    const currentModel = profiles[currentProfileId].model;
+    const currentModel = profiles[currentProfileId].models[platform] || "";
 
     // Temporarily remove the change event listener to prevent triggering saves
     modelSelect.removeEventListener("change", saveCurrentProfile);
@@ -805,9 +875,14 @@ document.addEventListener("DOMContentLoaded", () => {
       modelSelect.appendChild(group);
     }
 
+    // Set the saved model for this platform, or fall back to first available model
     modelSelect.value = currentModel;
     if (!modelSelect.value && modelSelect.options.length > 0) {
+      // No saved model or saved model not found, select first available
       modelSelect.selectedIndex = 0;
+      // Update the saved model to the selected one and save to storage
+      profiles[currentProfileId].models[platform] = modelSelect.value;
+      saveSettings();
     }
 
     // Re-add the event listener after setting the value
@@ -880,7 +955,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `Switched to "${profiles[currentProfileId].name}" profile`,
         "success"
       );
-      if (profiles[currentProfileId].apiKey) {
+      if (profiles[currentProfileId].apiKeys[profiles[currentProfileId].platform]) {
         testApiKey(true);
       }
       
@@ -897,7 +972,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     platformSelect.value = profile.platform;
     updatePlatformBadge();
-    apiKeyInput.value = profile.apiKey;
+    
+    // Load API key for the current platform
+    const currentApiKey = profile.apiKeys[profile.platform] || "";
+    apiKeyInput.value = currentApiKey;
+    
     settingsSubtitle.textContent = `Now editing profile: "${profile.name}"`;
     languageSelect.value = profile.language || "English";
 
@@ -905,7 +984,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadPresetData();
 
     // Ensure models are loaded for the current profile
-    if (profile.apiKey) {
+    if (currentApiKey) {
       testApiKey(true);
     } else {
       modelSelect.innerHTML =
@@ -946,8 +1025,13 @@ document.addEventListener("DOMContentLoaded", () => {
     profiles[profileId] = {
       name: profileName,
       platform: profiles.default.platform,
-      model: profiles.default.model,
-      apiKey: profiles.default.apiKey,
+      models: getDefaultModels(),
+      apiKeys: {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      },
       language: "English",
       presets: newPresets,
       currentPreset: "detailed",
@@ -981,8 +1065,13 @@ document.addEventListener("DOMContentLoaded", () => {
     profiles[profileId] = {
       name: profileName,
       platform: "gemini",
-      model: "gemini-2.5-flash",
-      apiKey: "",
+      models: getDefaultModels(),
+      apiKeys: {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      },
       presets: newPresets,
       language: "English",
       currentPreset: "detailed",
@@ -1084,8 +1173,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!profile) return;
 
     profile.platform = platformSelect.value as Platform;
-    profile.model = modelSelect.value;
-    profile.apiKey = apiKeyInput.value.trim();
+    profile.models[profile.platform] = modelSelect.value;
+    profile.apiKeys[profile.platform] = apiKeyInput.value.trim();
     profile.language = languageSelect.value;
     profile.currentPreset = presetSelect.value;
 
@@ -1128,8 +1217,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const savableProfile: StoredProfile = {
       name: profile.name,
       platform: profile.platform,
-      model: profile.model,
-      apiKey: profile.apiKey,
+      models: profile.models,
+      apiKeys: profile.apiKeys,
       language: profile.language,
       currentPreset: profile.currentPreset,
       presets: {}, // Always empty - all presets stored individually
@@ -1235,8 +1324,13 @@ document.addEventListener("DOMContentLoaded", () => {
             default: {
               name: "Default",
               platform: "gemini",
-              model: "gemini-2.5-flash",
-              apiKey: "",
+              models: getDefaultModels(),
+              apiKeys: {
+                openai: "",
+                anthropic: "",
+                gemini: "",
+                openrouter: "",
+              },
               language: "English",
               presets: {},
               currentPreset: "detailed",
@@ -1248,7 +1342,47 @@ document.addEventListener("DOMContentLoaded", () => {
         // --- Core Logic Change: Reconstruct profiles ---
         profiles = {};
         for (const profileId in storedProfiles) {
-          const userProfile = storedProfiles[profileId]; // This is the lean profile from storage
+          const userProfile = storedProfiles[profileId] as any; // This is the lean profile from storage
+
+          // Migration: Handle old profiles that have apiKey instead of apiKeys
+          if (!userProfile.apiKeys && userProfile.apiKey !== undefined) {
+            userProfile.apiKeys = {
+              openai: "",
+              anthropic: "",
+              gemini: "",
+              openrouter: "",
+            };
+            // If there was an old apiKey, put it in the current platform
+            if (userProfile.apiKey) {
+              userProfile.apiKeys[userProfile.platform] = userProfile.apiKey;
+            }
+            delete userProfile.apiKey; // Remove the old field
+          }
+
+          // Migration: Handle old profiles that have model instead of models
+          if (!userProfile.models && userProfile.model !== undefined) {
+            userProfile.models = getDefaultModels();
+            // If there was an old model, put it in the current platform
+            if (userProfile.model) {
+              userProfile.models[userProfile.platform] = userProfile.model;
+            }
+            delete userProfile.model; // Remove the old field
+          }
+
+          // Ensure apiKeys exists even if migration wasn't needed
+          if (!userProfile.apiKeys) {
+            userProfile.apiKeys = {
+              openai: "",
+              anthropic: "",
+              gemini: "",
+              openrouter: "",
+            };
+          }
+
+          // Ensure models exists even if migration wasn't needed
+          if (!userProfile.models) {
+            userProfile.models = getDefaultModels();
+          }
 
           // Start with a deep copy of the default prompts
           const fullPresets = JSON.parse(
@@ -1337,17 +1471,8 @@ document.addEventListener("DOMContentLoaded", () => {
           showStatus("API key is valid! Models loaded.", "success");
         populateModelDropdown(response.models);
         
-        // Only auto-select the first recommended model if no model is currently selected
-        if (!profiles[currentProfileId].model) {
-          const platform = platformSelect.value as Platform;
-          const config = platformConfigs[platform];
-          if (config?.models.length > 0) {
-            const firstModel = config.models[0].value;
-            modelSelect.value = firstModel;
-            profiles[currentProfileId].model = firstModel;
-            saveCurrentProfile();
-          }
-        }
+        // The populateModelDropdown function will handle setting the saved model
+        // or auto-selecting the first available model if none is saved
 
       } else if (response?.success) {
         if (!isSilent) showStatus("API key is valid!", "success");

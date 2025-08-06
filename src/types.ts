@@ -58,8 +58,8 @@ export interface AppStorage {
 export interface Profile {
   name: string;
   platform: Platform;
-  model: string;
-  apiKey: string;
+  models: Record<Platform, string>; // Models for each provider
+  apiKeys: Record<Platform, string>; // API keys for each provider
   language: string;
   presets: Record<string, PromptPreset>;
   currentPreset: string;
@@ -69,8 +69,8 @@ export interface Profile {
 export interface StoredProfile {
   name: string;
   platform: Platform;
-  model: string;
-  apiKey: string;
+  models: Record<Platform, string>; // Models for each provider
+  apiKeys: Record<Platform, string>; // API keys for each provider
   language: string;
   presets: Record<string, PresetReference>;
   currentPreset: string;

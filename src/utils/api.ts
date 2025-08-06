@@ -251,7 +251,18 @@ export async function generateSummary(
   channelName: string,
   language: string
 ): Promise<SummaryResult> {
-  const { platform, model, apiKey, presets, currentPreset } = profile;
+  const { platform, models, apiKeys, presets, currentPreset } = profile;
+  const apiKey = apiKeys[platform];
+  const model = models[platform];
+  
+  if (!apiKey) {
+    throw new Error(`API key for ${platform} provider is missing.`);
+  }
+  
+  if (!model) {
+    throw new Error(`Model for ${platform} provider is missing.`);
+  }
+  
   const preset = presets[currentPreset];
   if (!preset) {
     throw new Error(`Selected prompt preset "${currentPreset}" not found.`);

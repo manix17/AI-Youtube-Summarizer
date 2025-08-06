@@ -101,10 +101,40 @@ async function handleSummarize(
 
     // 2. Load all storage data to reconstruct the profile properly
     const allStorageData = await chrome.storage.sync.get(null);
-    const userProfile = allStorageData[`profile_${profileId}`];
+    const userProfile = allStorageData[`profile_${profileId}`] as any;
 
-    if (!userProfile || !userProfile.apiKey) {
-      throw new Error(`API key for profile "${profileId}" is missing.`);
+    if (!userProfile) {
+      throw new Error(`Profile "${profileId}" not found.`);
+    }
+
+    // Migration: Handle old profiles that have apiKey instead of apiKeys
+    if (!userProfile.apiKeys && userProfile.apiKey !== undefined) {
+      userProfile.apiKeys = {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      };
+      // If there was an old apiKey, put it in the current platform
+      if (userProfile.apiKey) {
+        userProfile.apiKeys[userProfile.platform] = userProfile.apiKey;
+      }
+    }
+
+    // Ensure apiKeys exists
+    if (!userProfile.apiKeys) {
+      userProfile.apiKeys = {
+        openai: "",
+        anthropic: "",
+        gemini: "",
+        openrouter: "",
+      };
+    }
+
+    // Check if API key exists for the selected platform
+    const currentApiKey = userProfile.apiKeys[userProfile.platform];
+    if (!currentApiKey) {
+      throw new Error(`API key for ${userProfile.platform} provider is missing in profile "${profileId}".`);
     }
 
     // 3. Reconstruct the full profile using the same logic as options page
