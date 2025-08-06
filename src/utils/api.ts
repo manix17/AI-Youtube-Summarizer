@@ -11,6 +11,8 @@ import type {
   OpenAIResponse,
   AnthropicResponse,
   GeminiResponse,
+  SummaryResult,
+  TokenUsageResult,
 } from "../types";
 
 /**
@@ -113,21 +115,40 @@ function buildRequestHeaders(
 }
 
 /**
- * Extracts the summary from the API response.
+ * Extracts the summary and token usage from the API response.
  * @param {Platform} platform - The AI platform.
  * @param {ApiResponse} data - The response data from the API.
- * @returns {string} The summary text.
+ * @returns {SummaryResult} The summary text and token usage.
  */
 function extractSummaryFromResponse(
   platform: Platform,
   data: ApiResponse
-): string {
+): SummaryResult {
   try {
+    let summary: string;
+    let tokenUsage: TokenUsageResult | undefined;
+
     switch (platform) {
       case "openai":
-        return (data as OpenAIResponse).choices[0].message.content;
+        const openaiData = data as OpenAIResponse;
+        summary = openaiData.choices[0].message.content;
+        if (openaiData.usage) {
+          tokenUsage = {
+            inputTokens: openaiData.usage.prompt_tokens,
+            outputTokens: openaiData.usage.completion_tokens,
+          };
+        }
+        break;
       case "anthropic":
-        return (data as AnthropicResponse).content[0].text;
+        const anthropicData = data as AnthropicResponse;
+        summary = anthropicData.content[0].text;
+        if (anthropicData.usage) {
+          tokenUsage = {
+            inputTokens: anthropicData.usage.input_tokens,
+            outputTokens: anthropicData.usage.output_tokens,
+          };
+        }
+        break;
       case "gemini":
         const geminiData = data as GeminiResponse;
         if (!geminiData.candidates || geminiData.candidates.length === 0) {
@@ -141,10 +162,21 @@ function extractSummaryFromResponse(
           }
           throw new Error("API did not return any summary candidates.");
         }
-        return geminiData.candidates[0].content.parts[0].text;
+        summary = geminiData.candidates[0].content.parts[0].text;
+        if (geminiData.usageMetadata) {
+          // Include thoughts tokens in output since they're part of the reasoning process
+          const thoughtsTokens = geminiData.usageMetadata.thoughtsTokenCount || 0;
+          tokenUsage = {
+            inputTokens: geminiData.usageMetadata.promptTokenCount,
+            outputTokens: geminiData.usageMetadata.candidatesTokenCount + thoughtsTokens,
+          };
+        }
+        break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
+
+    return { summary, tokenUsage };
   } catch (error) {
     console.error("Error extracting summary:", error, "Full response:", data);
     throw new Error("Could not parse summary from API response.");
@@ -198,7 +230,7 @@ function handleApiError(
  * @param {string} videoTitle - The title of the video.
  * @param {string} videoDuration - The duration of the video.
  * @param {string} channelName - The name of the channel.
- * @returns {Promise<string>} A promise that resolves with the summary.
+ * @returns {Promise<SummaryResult>} A promise that resolves with the summary and token usage.
  */
 export async function generateSummary(
   profile: Profile,
@@ -207,7 +239,7 @@ export async function generateSummary(
   videoDuration: string,
   channelName: string,
   language: string
-): Promise<string> {
+): Promise<SummaryResult> {
   const { platform, model, apiKey, presets, currentPreset } = profile;
   const preset = presets[currentPreset];
   if (!preset) {

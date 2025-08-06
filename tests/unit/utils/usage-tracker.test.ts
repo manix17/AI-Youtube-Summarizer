@@ -70,6 +70,8 @@ describe("Usage Tracker Utils", () => {
       const usage = await getTokenUsage();
       
       expect(usage.totalTokens).toBe(0);
+      expect(usage.inputTokens).toBe(0);
+      expect(usage.outputTokens).toBe(0);
       expect(usage.totalRequests).toBe(0);
       expect(usage.platformUsage).toEqual({});
       expect(usage.lastReset).toBeDefined();
@@ -78,11 +80,13 @@ describe("Usage Tracker Utils", () => {
     it("should return existing usage data", async () => {
       const existingUsage = {
         totalTokens: 1000,
+        inputTokens: 700,
+        outputTokens: 300,
         totalRequests: 5,
         lastReset: "2024-01-01T00:00:00.000Z",
         platformUsage: {
-          openai: { tokens: 600, requests: 3, lastUsed: "2024-01-01T00:00:00.000Z" },
-          anthropic: { tokens: 400, requests: 2, lastUsed: "2024-01-01T00:00:00.000Z" },
+          openai: { tokens: 600, inputTokens: 420, outputTokens: 180, requests: 3, lastUsed: "2024-01-01T00:00:00.000Z" },
+          anthropic: { tokens: 400, inputTokens: 280, outputTokens: 120, requests: 2, lastUsed: "2024-01-01T00:00:00.000Z" },
         },
       };
 
@@ -106,6 +110,8 @@ describe("Usage Tracker Utils", () => {
         const data = {
           token_usage_stats: {
             totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
             totalRequests: 0,
             lastReset: "2024-01-01T00:00:00.000Z",
             platformUsage: {},
@@ -121,16 +127,20 @@ describe("Usage Tracker Utils", () => {
       const mockSet = jest.fn((data, callback) => callback && callback());
       mockChrome.storage.sync.set = mockSet;
 
-      await updateTokenUsage("openai", 100);
+      await updateTokenUsage("openai", 70, 30);
 
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
           token_usage_stats: expect.objectContaining({
             totalTokens: 100,
+            inputTokens: 70,
+            outputTokens: 30,
             totalRequests: 1,
             platformUsage: expect.objectContaining({
               openai: expect.objectContaining({
                 tokens: 100,
+                inputTokens: 70,
+                outputTokens: 30,
                 requests: 1,
               }),
             }),
@@ -152,6 +162,8 @@ describe("Usage Tracker Utils", () => {
         expect.objectContaining({
           token_usage_stats: expect.objectContaining({
             totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
             totalRequests: 0,
             platformUsage: {},
           }),
@@ -244,6 +256,8 @@ describe("Usage Tracker Utils", () => {
         const data = {
           token_usage_stats: {
             totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
             totalRequests: 0,
             lastReset: "2024-01-01T00:00:00.000Z",
             platformUsage: {},
@@ -264,7 +278,8 @@ describe("Usage Tracker Utils", () => {
         "You are a helpful assistant.",
         "Summarize this: {transcript}",
         "This is a test transcript with some content.",
-        "This is a summary of the content."
+        "This is a summary of the content.",
+        { inputTokens: 50, outputTokens: 25 }
       );
 
       // Should have been called with updated token counts
@@ -272,10 +287,14 @@ describe("Usage Tracker Utils", () => {
         expect.objectContaining({
           token_usage_stats: expect.objectContaining({
             totalTokens: expect.any(Number),
+            inputTokens: expect.any(Number),
+            outputTokens: expect.any(Number),
             totalRequests: 1,
             platformUsage: expect.objectContaining({
               openai: expect.objectContaining({
                 tokens: expect.any(Number),
+                inputTokens: expect.any(Number),
+                outputTokens: expect.any(Number),
                 requests: 1,
               }),
             }),
@@ -284,11 +303,75 @@ describe("Usage Tracker Utils", () => {
         expect.any(Function)
       );
 
-      // Verify that tokens were estimated and tracked
+      // Verify that actual tokens were tracked
+      const setCall = mockSet.mock.calls[0][0];
+      const trackedUsage = setCall.token_usage_stats;
+      expect(trackedUsage.totalTokens).toBe(75); // 50 + 25
+      expect(trackedUsage.inputTokens).toBe(50);
+      expect(trackedUsage.outputTokens).toBe(25);
+      expect(trackedUsage.platformUsage.openai.tokens).toBe(75);
+      expect(trackedUsage.platformUsage.openai.inputTokens).toBe(50);
+      expect(trackedUsage.platformUsage.openai.outputTokens).toBe(25);
+    });
+
+    it("should fall back to estimation when no token usage provided", async () => {
+      mockChrome.storage.sync.get.mockImplementation((keys, callback) => {
+        const data = {
+          token_usage_stats: {
+            totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            totalRequests: 0,
+            lastReset: "2024-01-01T00:00:00.000Z",
+            platformUsage: {},
+          },
+        };
+        if (callback) {
+          callback(data);
+        } else {
+          return Promise.resolve(data);
+        }
+      });
+
+      const mockSet = jest.fn((data, callback) => callback && callback());
+      mockChrome.storage.sync.set = mockSet;
+
+      await trackSummarization(
+        "anthropic",
+        "You are a helpful assistant.",
+        "Summarize this: {transcript}",
+        "This is a test transcript with some content.",
+        "This is a summary of the content."
+        // No token usage provided - should fall back to estimation
+      );
+
+      // Should have been called with estimated token counts
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          token_usage_stats: expect.objectContaining({
+            totalTokens: expect.any(Number),
+            inputTokens: expect.any(Number),
+            outputTokens: expect.any(Number),
+            totalRequests: 1,
+            platformUsage: expect.objectContaining({
+              anthropic: expect.objectContaining({
+                tokens: expect.any(Number),
+                inputTokens: expect.any(Number),
+                outputTokens: expect.any(Number),
+                requests: 1,
+              }),
+            }),
+          }),
+        }),
+        expect.any(Function)
+      );
+
+      // Verify that estimation was used (should be > 0)
       const setCall = mockSet.mock.calls[0][0];
       const trackedUsage = setCall.token_usage_stats;
       expect(trackedUsage.totalTokens).toBeGreaterThan(0);
-      expect(trackedUsage.platformUsage.openai.tokens).toBeGreaterThan(0);
+      expect(trackedUsage.inputTokens).toBeGreaterThan(0);
+      expect(trackedUsage.outputTokens).toBeGreaterThan(0);
     });
   });
 });

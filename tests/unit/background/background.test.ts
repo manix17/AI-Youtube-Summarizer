@@ -230,8 +230,11 @@ describe("Background Script", () => {
     });
 
     it("should handle successful summarization", async () => {
-      const mockSummary = "This is a test summary of the video content.";
-      mockGenerateSummary.mockResolvedValue(mockSummary);
+      const mockSummaryResult = {
+        summary: "This is a test summary of the video content.",
+        tokenUsage: { inputTokens: 100, outputTokens: 50 }
+      };
+      mockGenerateSummary.mockResolvedValue(mockSummaryResult);
 
       // Mock storage response for Promise-based API with new storage structure
       mockChrome.storage.sync.get.mockImplementation((keys) => {
@@ -303,7 +306,7 @@ describe("Background Script", () => {
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: "summarizeResponse",
-        payload: { summary: mockSummary },
+        payload: { summary: mockSummaryResult.summary },
       });
     });
 
@@ -485,7 +488,10 @@ describe("Background Script", () => {
     });
 
     it("should merge custom presets with default presets", async () => {
-      mockGenerateSummary.mockResolvedValue("Summary with custom preset");
+      mockGenerateSummary.mockResolvedValue({
+        summary: "Summary with custom preset",
+        tokenUsage: { inputTokens: 80, outputTokens: 40 }
+      });
 
       mockChrome.storage.sync.get.mockImplementation((keys) => {
         return Promise.resolve({
@@ -591,7 +597,10 @@ describe("Background Script", () => {
     });
 
     it("should properly reconstruct profile with mixed default and custom presets", async () => {
-      mockGenerateSummary.mockResolvedValue("Test summary");
+      mockGenerateSummary.mockResolvedValue({
+        summary: "Test summary",
+        tokenUsage: { inputTokens: 120, outputTokens: 60 }
+      });
 
       mockChrome.storage.sync.get.mockImplementation((keys) => {
         return Promise.resolve({

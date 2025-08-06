@@ -146,7 +146,7 @@ async function handleSummarize(
     };
 
     // 4. Generate the summary with the full profile
-    const summary = await generateSummary(
+    const result = await generateSummary(
       fullProfile,
       request.payload.transcript,
       request.payload.videoTitle,
@@ -164,14 +164,15 @@ async function handleSummarize(
           preset.system_prompt,
           preset.user_prompt,
           request.payload.transcript,
-          summary
+          result.summary,
+          result.tokenUsage
         );
       }
     } catch (trackingError) {
       console.warn("Failed to track token usage:", trackingError);
     }
 
-    sendResponse({ type: "summarizeResponse", payload: { summary } });
+    sendResponse({ type: "summarizeResponse", payload: { summary: result.summary } });
   } catch (error) {
     console.error("Error in handleSummarize:", error);
     const message =

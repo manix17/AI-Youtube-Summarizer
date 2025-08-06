@@ -4,11 +4,15 @@
 
 export interface TokenUsage {
   totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
   totalRequests: number;
   lastReset: string;
   platformUsage: {
     [platform: string]: {
       tokens: number;
+      inputTokens: number;
+      outputTokens: number;
       requests: number;
       lastUsed: string;
     };
@@ -27,7 +31,6 @@ export interface StorageInfo {
 
 const CHROME_SYNC_STORAGE_LIMIT = 102400; // 100 KB in bytes
 const TOKEN_USAGE_KEY = 'token_usage_stats';
-const USAGE_STORAGE_KEY = 'usage_storage_info';
 
 /**
  * Estimate token count from text (rough approximation)
@@ -65,6 +68,8 @@ export async function getTokenUsage(): Promise<TokenUsage> {
     chrome.storage.sync.get([TOKEN_USAGE_KEY], (result) => {
       const defaultUsage: TokenUsage = {
         totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
         totalRequests: 0,
         lastReset: new Date().toISOString(),
         platformUsage: {},
@@ -80,24 +85,32 @@ export async function getTokenUsage(): Promise<TokenUsage> {
  */
 export async function updateTokenUsage(
   platform: string,
-  tokensUsed: number
+  inputTokens: number,
+  outputTokens: number
 ): Promise<void> {
+  const totalTokens = inputTokens + outputTokens;
   const currentUsage = await getTokenUsage();
   
   // Update totals
-  currentUsage.totalTokens += tokensUsed;
+  currentUsage.totalTokens += totalTokens;
+  currentUsage.inputTokens += inputTokens;
+  currentUsage.outputTokens += outputTokens;
   currentUsage.totalRequests += 1;
   
   // Update platform-specific usage
   if (!currentUsage.platformUsage[platform]) {
     currentUsage.platformUsage[platform] = {
       tokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
       requests: 0,
       lastUsed: new Date().toISOString(),
     };
   }
   
-  currentUsage.platformUsage[platform].tokens += tokensUsed;
+  currentUsage.platformUsage[platform].tokens += totalTokens;
+  currentUsage.platformUsage[platform].inputTokens += inputTokens;
+  currentUsage.platformUsage[platform].outputTokens += outputTokens;
   currentUsage.platformUsage[platform].requests += 1;
   currentUsage.platformUsage[platform].lastUsed = new Date().toISOString();
   
@@ -116,6 +129,8 @@ export async function updateTokenUsage(
 export async function resetTokenUsage(): Promise<void> {
   const resetUsage: TokenUsage = {
     totalTokens: 0,
+    inputTokens: 0,
+    outputTokens: 0,
     totalRequests: 0,
     lastReset: new Date().toISOString(),
     platformUsage: {},
@@ -212,6 +227,14 @@ export function getLargestProfiles(storageInfo: StorageInfo, limit: number = 3):
 }
 
 /**
+ * Token usage from API response
+ */
+export interface TokenUsageFromApi {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/**
  * Track token usage for a summarization request
  */
 export async function trackSummarization(
@@ -219,16 +242,21 @@ export async function trackSummarization(
   systemPrompt: string,
   userPrompt: string,
   transcript: string,
-  response: string
+  response: string,
+  actualTokenUsage?: TokenUsageFromApi
 ): Promise<void> {
-  // Estimate tokens for input (system + user prompt + transcript)
-  const inputTokens = estimateTokenCount(systemPrompt + userPrompt + transcript);
+  let inputTokens: number;
+  let outputTokens: number;
+
+  if (actualTokenUsage) {
+    // Use actual token counts from API response
+    inputTokens = actualTokenUsage.inputTokens;
+    outputTokens = actualTokenUsage.outputTokens;
+  } else {
+    // Fall back to estimation
+    inputTokens = estimateTokenCount(systemPrompt + userPrompt + transcript);
+    outputTokens = estimateTokenCount(response);
+  }
   
-  // Estimate tokens for output (response)
-  const outputTokens = estimateTokenCount(response);
-  
-  // Total tokens (input + output)
-  const totalTokens = inputTokens + outputTokens;
-  
-  await updateTokenUsage(platform, totalTokens);
+  await updateTokenUsage(platform, inputTokens, outputTokens);
 }

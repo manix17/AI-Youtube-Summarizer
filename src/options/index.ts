@@ -134,6 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Usage Statistics Elements
   const totalTokensElement = document.getElementById("total-tokens") as HTMLElement;
   const totalRequestsElement = document.getElementById("total-requests") as HTMLElement;
+  const inputTokensElement = document.getElementById("input-tokens") as HTMLElement;
+  const outputTokensElement = document.getElementById("output-tokens") as HTMLElement;
   const resetTokensBtn = document.getElementById("reset-tokens-btn") as HTMLButtonElement;
   const storageProgressElement = document.getElementById("storage-progress") as HTMLElement;
   const storageUsedElement = document.getElementById("storage-used") as HTMLElement;
@@ -268,6 +270,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update token usage display
       totalTokensElement.textContent = formatLargeNumber(tokenUsage.totalTokens);
       totalRequestsElement.textContent = `${tokenUsage.totalRequests.toLocaleString()} requests`;
+      inputTokensElement.textContent = formatLargeNumber(tokenUsage.inputTokens);
+      outputTokensElement.textContent = formatLargeNumber(tokenUsage.outputTokens);
 
       // Update storage usage display
       const usagePercentage = getStorageUsagePercentage(storageInfo);
@@ -319,6 +323,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="platform-usage-info">
               <div class="platform-tokens">${formatLargeNumber(stats.tokens)}</div>
               <div class="platform-requests">${stats.requests.toLocaleString()} requests</div>
+              <div class="platform-requests" style="font-size: 0.7rem;">
+                In: ${formatLargeNumber(stats.inputTokens || 0)} • Out: ${formatLargeNumber(stats.outputTokens || 0)}
+              </div>
             </div>
           </div>
         `;

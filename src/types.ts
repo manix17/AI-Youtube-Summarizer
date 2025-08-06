@@ -130,6 +130,11 @@ export interface OpenAIRequest {
 }
 export interface OpenAIResponse {
   choices: { message: { content: string } }[];
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 // Anthropic specific types
@@ -146,6 +151,10 @@ export interface AnthropicRequest {
 }
 export interface AnthropicResponse {
   content: { text: string }[];
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
 }
 
 // Gemini specific types
@@ -167,6 +176,28 @@ export interface GeminiResponse {
   promptFeedback?: {
     blockReason: string;
   };
+  usageMetadata?: {
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+    promptTokensDetails?: Array<{
+      modality: string;
+      tokenCount: number;
+    }>;
+    thoughtsTokenCount?: number;
+  };
+}
+
+// Token usage result from API
+export interface TokenUsageResult {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+// Summary result with token usage
+export interface SummaryResult {
+  summary: string;
+  tokenUsage?: TokenUsageResult;
 }
 
 // Union types for requests and responses
