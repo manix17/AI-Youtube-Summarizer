@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { convertToHTML } from "../../../src/utils/dom_parser";
+import { convertToHTML, convertHTMLToText } from "../../../src/utils/dom_parser";
 import complexMarkdown from "../../fixtures/complex_markdown.json";
 
 describe("DOM Parser Utils", () => {
@@ -160,6 +160,142 @@ describe("DOM Parser Utils", () => {
       expect(result).toContain('data-seconds="5130"');
       expect(result).toContain('>1:23:45</a>');
       expect(result).toContain('>1:25:30</a>');
+    });
+  });
+
+  describe("convertHTMLToText", () => {
+    beforeEach(() => {
+      // Clear the document body before each test
+      document.body.innerHTML = "";
+    });
+
+    it("should convert HTML headings to markdown-like text", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "<h3>Test Heading</h3>";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("### Test Heading");
+    });
+
+    it("should convert HTML paragraphs with proper spacing", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "<p>First paragraph</p><p>Second paragraph</p>";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("First paragraph\n\nSecond paragraph");
+    });
+
+    it("should convert unordered lists with proper indentation", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "<ul><li>First item</li><li>Second item</li></ul>";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("* First item\n* Second item");
+    });
+
+    it("should convert ordered lists with proper indentation", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "<ol><li>First item</li><li>Second item</li></ol>";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("1. First item\n1. Second item");
+    });
+
+    it("should handle nested lists with proper indentation", () => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <ul>
+          <li>Top level item</li>
+          <li>Another top item
+            <ul>
+              <li>Nested item 1</li>
+              <li>Nested item 2</li>
+            </ul>
+          </li>
+        </ul>
+      `;
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toContain("* Top level item");
+      expect(result).toContain("    * Nested item 1");
+      expect(result).toContain("    * Nested item 2");
+    });
+
+    it("should preserve bold and code formatting", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "<p>This is <strong>bold</strong> and <code>code</code> text</p>";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("This is **bold** and `code` text");
+    });
+
+    it("should handle timestamp links correctly", () => {
+      const div = document.createElement("div");
+      div.innerHTML = '<p>At <a href="javascript:void(0)" data-seconds="83" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">1:23</a> something happens</p>';
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("At 1:23 something happens");
+    });
+
+    it("should handle mixed content with proper formatting", () => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <h3>Summary</h3>
+        <p>This is a paragraph with <strong>bold</strong> text.</p>
+        <ul>
+          <li>First point</li>
+          <li>Second point with <code>code</code></li>
+        </ul>
+      `;
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toContain("### Summary");
+      expect(result).toContain("This is a paragraph with **bold** text.");
+      expect(result).toContain("* First point");
+      expect(result).toContain("* Second point with `code`");
+    });
+
+    it("should handle empty elements gracefully", () => {
+      const div = document.createElement("div");
+      div.innerHTML = "";
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      expect(result).toBe("");
+    });
+
+    it("should round-trip conversion maintain basic structure", () => {
+      const originalMarkdown = `### Test Heading
+
+This is a paragraph with **bold** text.
+
+* First item
+* Second item
+    * Nested item
+
+1. Numbered item
+1. Another numbered item`;
+      
+      // Convert to HTML and back to text
+      const html = convertToHTML(originalMarkdown);
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      document.body.appendChild(div);
+      const roundTripText = convertHTMLToText(div);
+      
+      // Should maintain basic structure
+      expect(roundTripText).toContain("### Test Heading");
+      expect(roundTripText).toContain("**bold**");
+      expect(roundTripText).toContain("* First item");
+      expect(roundTripText).toContain("1. Numbered item");
     });
   });
 });

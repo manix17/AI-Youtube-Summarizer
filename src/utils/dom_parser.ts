@@ -94,6 +94,89 @@ function closeAllLists(listStack: string[], indent: string): string {
  * @param {string} text - The input text with markdown formatting.
  * @returns {string} The resulting HTML string.
  */
+/**
+ * Converts HTML back to markdown-like formatted text with proper indentation.
+ * @param {HTMLElement} element - The HTML element to convert.
+ * @returns {string} The formatted text.
+ */
+export function convertHTMLToText(element: HTMLElement): string {
+  function processNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+    
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const tagName = el.tagName.toLowerCase();
+      
+      switch (tagName) {
+        case 'h3':
+          return `\n### ${processChildren(node)}\n\n`;
+        case 'p':
+          return `${processChildren(node)}\n\n`;
+        case 'ul':
+        case 'ol':
+          return processChildren(node);
+        case 'li':
+          const parentTag = el.parentElement?.tagName.toLowerCase();
+          const prefix = parentTag === 'ol' ? '1. ' : '* ';
+          // Calculate depth by counting nested list ancestors
+          const depth = getListDepth(el);
+          const indent = "    ".repeat(depth);
+          return `${indent}${prefix}${processChildren(node).trim()}\n`;
+        case 'strong':
+          return `**${processChildren(node)}**`;
+        case 'code':
+          return `\`${processChildren(node)}\``;
+        case 'em':
+          return processChildren(node);
+        case 'a':
+          const linkElement = el as HTMLAnchorElement;
+          if (linkElement.classList.contains('timestamp-link')) {
+            return linkElement.textContent || '';
+          } else {
+            return `[${processChildren(node)}](${linkElement.href})`;
+          }
+        default:
+          return processChildren(node);
+      }
+    }
+    
+    return "";
+  }
+  
+  function processChildren(node: Node): string {
+    let result = "";
+    for (let i = 0; i < node.childNodes.length; i++) {
+      result += processNode(node.childNodes[i]);
+    }
+    return result;
+  }
+  
+  function getListDepth(element: Element): number {
+    let depth = 0;
+    let current = element.parentElement;
+    
+    while (current && current !== element.ownerDocument?.body) {
+      if (current.tagName === 'UL' || current.tagName === 'OL') {
+        depth++;
+      }
+      current = current.parentElement;
+    }
+    
+    // Subtract 1 because the first level should be at depth 0
+    return Math.max(0, depth - 1);
+  }
+  
+  let result = processNode(element);
+  
+  // Clean up extra newlines
+  result = result.replace(/\n{3,}/g, '\n\n');
+  result = result.trim();
+  
+  return result;
+}
+
 export function convertToHTML(text: string): string {
   text = preprocessText(text);
   const lines = text.split("\n");

@@ -1,6 +1,6 @@
 // src/content/index.ts
 
-import { convertToHTML } from "../utils/dom_parser";
+import { convertToHTML, convertHTMLToText } from "../utils/dom_parser";
 import {
   getProgressiveLoadingMessage,
   getContextualLoadingMessage,
@@ -149,7 +149,9 @@ function handleDownloadSummary(): void {
     document.querySelector<HTMLElement>(".markdown-content");
   const videoTitle = getVideoMetadata().videoTitle;
   if (summaryContent) {
-    const blob = new Blob([summaryContent.innerText], {
+    // Use the new conversion function to preserve formatting
+    const formattedText = convertHTMLToText(summaryContent);
+    const blob = new Blob([formattedText], {
       type: "text/plain;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
