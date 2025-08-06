@@ -51,9 +51,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const platformSelect = document.getElementById(
     "platform-select"
   ) as HTMLSelectElement;
-  const modelSelect = document.getElementById(
-    "model-select"
-  ) as HTMLSelectElement;
+  const modelSearchInput = document.getElementById(
+    "model-search"
+  ) as HTMLInputElement;
+  const modelDropdown = document.getElementById(
+    "model-dropdown"
+  ) as HTMLDivElement;
+  const selectedModelInput = document.getElementById(
+    "selected-model"
+  ) as HTMLInputElement;
   const apiKeyInput = document.getElementById("api-key") as HTMLInputElement;
   const systemPromptTextarea = document.getElementById(
     "system-prompt"
@@ -275,10 +281,163 @@ document.addEventListener("DOMContentLoaded", () => {
       isInitializing = false;
     }
   }
+  // Global variables for model search
+  let availableModels: { recommended: Map<string, string>, other: Map<string, string> } = { recommended: new Map(), other: new Map() };
+  let isDropdownOpen = false;
+
+  // Model search functionality
+  function handleModelSearch(): void {
+    const searchTerm = modelSearchInput.value.toLowerCase();
+    renderModelOptions(searchTerm);
+    showModelDropdown();
+  }
+
+  function showModelDropdown(): void {
+    if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
+      isDropdownOpen = true;
+      modelDropdown.classList.add("show");
+      if (!modelSearchInput.value) {
+        renderModelOptions("");
+      }
+    }
+  }
+
+  function hideModelDropdown(): void {
+    isDropdownOpen = false;
+    modelDropdown.classList.remove("show");
+  }
+
+  function selectModel(value: string, displayName: string): void {
+    selectedModelInput.value = value;
+    modelSearchInput.value = displayName;
+    hideModelDropdown();
+    
+    // Update the profile
+    const profile = profiles[currentProfileId];
+    if (profile) {
+      const currentPlatform = profile.platform;
+      profile.models[currentPlatform] = value;
+      saveSettings();
+    }
+  }
+
+  function renderModelOptions(searchTerm: string = ""): void {
+    const dropdownContent = modelDropdown.querySelector('.model-dropdown-content');
+    if (!dropdownContent) return;
+
+    dropdownContent.innerHTML = "";
+
+    const filteredRecommended = new Map<string, string>();
+    const filteredOther = new Map<string, string>();
+
+    // Filter models based on search term
+    availableModels.recommended.forEach((label, value) => {
+      if (searchTerm === "" || 
+          label.toLowerCase().includes(searchTerm) || 
+          value.toLowerCase().includes(searchTerm) ||
+          (searchTerm === "free" && (label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
+        filteredRecommended.set(value, label);
+      }
+    });
+
+    availableModels.other.forEach((label, value) => {
+      if (searchTerm === "" || 
+          label.toLowerCase().includes(searchTerm) || 
+          value.toLowerCase().includes(searchTerm) ||
+          (searchTerm === "free" && (label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
+        filteredOther.set(value, label);
+      }
+    });
+
+    const currentSelectedModel = selectedModelInput.value;
+
+    // Render filtered results
+    if (filteredRecommended.size === 0 && filteredOther.size === 0) {
+      dropdownContent.innerHTML = `
+        <div class="no-results-message">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          No models found
+        </div>
+      `;
+      return;
+    }
+
+    if (filteredRecommended.size > 0) {
+      const section = document.createElement("div");
+      section.className = "model-section";
+      section.innerHTML = `<div class="model-section-header">Recommended Models</div>`;
+      
+      filteredRecommended.forEach((label, value) => {
+        const option = document.createElement("div");
+        option.className = `model-option ${value === currentSelectedModel ? 'selected' : ''}`;
+        option.innerHTML = `
+          <div class="model-name">${label}</div>
+          <div class="model-value">${value}</div>
+        `;
+        option.addEventListener("click", () => selectModel(value, label));
+        section.appendChild(option);
+      });
+      
+      dropdownContent.appendChild(section);
+    }
+
+    if (filteredOther.size > 0) {
+      const section = document.createElement("div");
+      section.className = "model-section";
+      section.innerHTML = `<div class="model-section-header">Other Models</div>`;
+      
+      filteredOther.forEach((label, value) => {
+        const option = document.createElement("div");
+        option.className = `model-option ${value === currentSelectedModel ? 'selected' : ''}`;
+        option.innerHTML = `
+          <div class="model-name">${label}</div>
+          <div class="model-value">${value}</div>
+        `;
+        option.addEventListener("click", () => selectModel(value, label));
+        section.appendChild(option);
+      });
+      
+      dropdownContent.appendChild(section);
+    }
+  }
+
+  function clearModels(): void {
+    availableModels.recommended.clear();
+    availableModels.other.clear();
+    selectedModelInput.value = "";
+    modelSearchInput.value = "";
+    modelSearchInput.placeholder = "Test API Key to load models...";
+    modelSearchInput.disabled = true;
+    hideModelDropdown();
+    
+    const dropdownContent = modelDropdown.querySelector('.model-dropdown-content');
+    if (dropdownContent) {
+      dropdownContent.innerHTML = '<div class="no-models-message">Test API Key to load models</div>';
+    }
+  }
+
   function setupEventListeners(): void {
     platformSelect?.addEventListener("change", handlePlatformChange);
-    modelSelect?.addEventListener("change", saveCurrentProfile);
+    selectedModelInput?.addEventListener("change", saveCurrentProfile);
     apiKeyInput?.addEventListener("input", handleApiKeyInput);
+
+    // Model search functionality
+    modelSearchInput?.addEventListener("input", handleModelSearch);
+    modelSearchInput?.addEventListener("focus", showModelDropdown);
+    modelSearchInput?.addEventListener("blur", () => {
+      // Delay hiding to allow clicking on options
+      setTimeout(() => hideModelDropdown(), 150);
+    });
+
+    // Click outside to close dropdown
+    document.addEventListener("click", (e) => {
+      if (!modelSearchInput?.contains(e.target as Node) && !modelDropdown?.contains(e.target as Node)) {
+        hideModelDropdown();
+      }
+    });
     addProfileBtn?.addEventListener("click", () =>
       profileModal?.classList.add("show")
     );
@@ -621,9 +780,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // If API key exists for this platform, test it to load models
       testApiKey(true);
     } else {
-      // No API key for this platform, show the "Test API Key" message
-      modelSelect.innerHTML = '<option value="">-- Test API Key to load models --</option>';
-      modelSelect.disabled = true;
+      // No API key for this platform, clear models
+      clearModels();
     }
   }
   function handleApiKeyInput(): void {
@@ -828,65 +986,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const config = platformConfigs[platform];
     const currentModel = profiles[currentProfileId].models[platform] || "";
 
-    // Temporarily remove the change event listener to prevent triggering saves
-    modelSelect.removeEventListener("change", saveCurrentProfile);
+    // Clear existing models
+    availableModels.recommended.clear();
+    availableModels.other.clear();
 
-    modelSelect.innerHTML = "";
-    modelSelect.disabled = false;
-
-    const recommendedModels = new Map<string, string>();
-    const otherModels = new Map<string, string>();
-
+    // Populate recommended models from config
     if (config?.models) {
       config.models.forEach((model) =>
-        recommendedModels.set(model.value, model.label)
+        availableModels.recommended.set(model.value, model.label)
       );
     }
+
+    // Populate other models from API response
     apiModels.forEach((model) => {
-      if (!recommendedModels.has(model.name)) {
-        otherModels.set(model.name, model.displayName);
+      if (!availableModels.recommended.has(model.name)) {
+        availableModels.other.set(model.name, model.displayName);
       }
     });
 
-    if (recommendedModels.size === 0 && otherModels.size === 0) {
-      modelSelect.innerHTML =
-        '<option value="">-- No compatible models found --</option>';
-      modelSelect.disabled = true;
-      // Re-add the event listener before returning
-      modelSelect.addEventListener("change", saveCurrentProfile);
-      return;
-    }
+    // Enable the search input
+    modelSearchInput.disabled = false;
+    modelSearchInput.placeholder = "Type 'free' to search for free models...";
 
-    if (recommendedModels.size > 0) {
-      const group = document.createElement("optgroup");
-      group.label = "Recommended Models";
-      recommendedModels.forEach((label, value) => {
-        group.appendChild(new Option(label, value));
-      });
-      modelSelect.appendChild(group);
-    }
-
-    if (otherModels.size > 0) {
-      const group = document.createElement("optgroup");
-      group.label = "Other Models";
-      otherModels.forEach((label, value) => {
-        group.appendChild(new Option(label, value));
-      });
-      modelSelect.appendChild(group);
-    }
-
-    // Set the saved model for this platform, or fall back to first available model
-    modelSelect.value = currentModel;
-    if (!modelSelect.value && modelSelect.options.length > 0) {
-      // No saved model or saved model not found, select first available
-      modelSelect.selectedIndex = 0;
-      // Update the saved model to the selected one and save to storage
-      profiles[currentProfileId].models[platform] = modelSelect.value;
+    // Set the current model
+    selectedModelInput.value = currentModel;
+    
+    // Find the display name for the current model
+    let currentModelDisplay = "";
+    if (currentModel) {
+      currentModelDisplay = availableModels.recommended.get(currentModel) || 
+                           availableModels.other.get(currentModel) || 
+                           currentModel;
+      modelSearchInput.value = currentModelDisplay;
+    } else if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
+      // Auto-select the first available model
+      const firstModel = availableModels.recommended.size > 0 
+        ? Array.from(availableModels.recommended.entries())[0]
+        : Array.from(availableModels.other.entries())[0];
+      
+      selectedModelInput.value = firstModel[0];
+      modelSearchInput.value = firstModel[1];
+      profiles[currentProfileId].models[platform] = firstModel[0];
       saveSettings();
     }
 
-    // Re-add the event listener after setting the value
-    modelSelect.addEventListener("change", saveCurrentProfile);
+    // Initialize the dropdown content
+    renderModelOptions("");
   }
 
   function updatePlatformBadge(): void {
@@ -987,9 +1132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentApiKey) {
       testApiKey(true);
     } else {
-      modelSelect.innerHTML =
-        '<option value="">-- Enter API Key to load models --</option>';
-      modelSelect.disabled = true;
+      clearModels();
     }
   }
 
@@ -1173,7 +1316,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!profile) return;
 
     profile.platform = platformSelect.value as Platform;
-    profile.models[profile.platform] = modelSelect.value;
+    profile.models[profile.platform] = selectedModelInput.value;
     profile.apiKeys[profile.platform] = apiKeyInput.value.trim();
     profile.language = languageSelect.value;
     profile.currentPreset = presetSelect.value;
@@ -1464,8 +1607,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response?.error) {
         if (!isSilent) showStatus(`Error: ${response.error}`, "error");
-        modelSelect.innerHTML = `<option value="">-- Key validation failed --</option>`;
-        modelSelect.disabled = true;
+        clearModels();
+        const dropdownContent = modelDropdown.querySelector('.model-dropdown-content');
+        if (dropdownContent) {
+          dropdownContent.innerHTML = '<div class="no-models-message">Key validation failed</div>';
+        }
       } else if (response?.models) {
         if (!isSilent)
           showStatus("API key is valid! Models loaded.", "success");

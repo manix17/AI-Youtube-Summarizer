@@ -941,6 +941,179 @@
         color: #6b7280;
       }
 
+      /* Enhanced Model Search Selector */
+      .model-search-container {
+        position: relative;
+      }
+
+      #model-search {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        background: white;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 20px;
+        padding-right: 45px;
+      }
+
+      #model-search:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      #model-search:disabled {
+        background-color: #f8fafc;
+        color: #a0aec0;
+        cursor: not-allowed;
+      }
+
+      .model-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.3s ease;
+      }
+
+      .model-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .model-dropdown-content {
+        padding: 8px 0;
+      }
+
+      .model-section {
+        margin-bottom: 8px;
+      }
+
+      .model-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .model-section-header {
+        padding: 8px 16px 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #f3f4f6;
+        background: #fafbfc;
+      }
+
+      .model-option {
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-left: 3px solid transparent;
+      }
+
+      .model-option:hover {
+        background: #f8fafc;
+        border-left-color: #4f46e5;
+      }
+
+      .model-option.selected {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        border-left-color: #7c3aed;
+      }
+
+      .model-option.selected:hover {
+        background: linear-gradient(135deg, #3730a3, #6b21a8);
+      }
+
+      .model-name {
+        font-weight: 500;
+        color: #2d3748;
+      }
+
+      .model-option.selected .model-name {
+        color: white;
+      }
+
+      .model-value {
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-family: "Monaco", "Menlo", monospace;
+      }
+
+      .model-option.selected .model-value {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .no-models-message {
+        padding: 20px 16px;
+        text-align: center;
+        color: #9ca3af;
+        font-style: italic;
+      }
+
+      .no-results-message {
+        padding: 16px;
+        text-align: center;
+        color: #9ca3af;
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .recommended-badge {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Custom scrollbar for model dropdown */
+      .model-dropdown::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .model-dropdown::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+      }
+
+      .model-dropdown::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 3px;
+      }
+
+      .model-dropdown::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+      }
+
       @media (max-width: 768px) {
         .main-content {
           flex-direction: column;
@@ -960,6 +1133,10 @@
         .container {
           margin: 10px;
           border-radius: 16px;
+        }
+
+        .model-dropdown {
+          max-height: 250px;
         }
       }
     </style>
@@ -1030,11 +1207,21 @@
             </div>
 
             <div class="form-group">
-                <label for="model-select">Model</label>
-                <div class="model-selector">
-                  <select id="model-select" disabled>
-                    <option value="">-- Test API Key to load models --</option>
-                  </select>
+                <label for="model-search">Model</label>
+                <div class="model-search-container">
+                  <input 
+                    type="text" 
+                    id="model-search" 
+                    placeholder="Type 'free' to search for free models..." 
+                    disabled
+                    autocomplete="off"
+                  />
+                  <div class="model-dropdown" id="model-dropdown">
+                    <div class="model-dropdown-content">
+                      <div class="no-models-message">Test API Key to load models</div>
+                    </div>
+                  </div>
+                  <input type="hidden" id="selected-model" />
                 </div>
               </div>
             <div class="form-group">
