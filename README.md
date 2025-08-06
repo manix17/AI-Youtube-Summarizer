@@ -28,7 +28,7 @@
 
 ## Features ✨
 
-- **Multi-Platform AI Support:** Choose between Google Gemini, OpenAI GPT, and Anthropic Claude models
+- **Multi-Platform AI Support:** Choose between Google Gemini, OpenAI GPT, Anthropic Claude, and OpenRouter models
 - **Instant AI Summaries:** Get a summary of any YouTube video that has a transcript
 - **Seamless YouTube Integration:** Summary appears directly on the video page with dark theme support
 - **Profile Management:** Create multiple profiles with different AI providers and custom prompts
@@ -77,7 +77,7 @@ You can install AI YouTube Summarizer in two ways:
 
 1.  **Set Your API Key:**
     - Right-click the extension icon in your toolbar and select "Options".
-    - Choose your preferred AI provider (Google Gemini, OpenAI, or Anthropic Claude).
+    - Choose your preferred AI provider (Google Gemini, OpenAI, Anthropic Claude, or OpenRouter).
     - Enter your API key, test it, and save your settings.
 2.  **Navigate to YouTube:** Go to any YouTube video with a transcript.
 3.  **Get a Summary:** Click the **"✨ Summarize"** button that appears below the video player.
@@ -127,6 +127,7 @@ We value your privacy and only request the permissions necessary for the extensi
   - `generativelanguage.googleapis.com` (Google Gemini)
   - `api.openai.com` (OpenAI GPT)
   - `api.anthropic.com` (Anthropic Claude)
+  - `openrouter.ai` (OpenRouter)
 
 **Your privacy is our priority.** We do not collect, store, or transmit any of your personal data. The extension communicates directly with your chosen AI service using the API key you provide. All data is stored locally in your browser.
 
@@ -178,7 +179,7 @@ The basic workflow is:
 - **Webpack** - Module bundling and optimization
 - **Jest + Puppeteer** - Comprehensive testing suite (99 tests across 9 suites)
 - **Chrome Extension API** - Manifest V3 compliance
-- **Multi-Provider AI Integration** - Google Gemini, OpenAI, Anthropic Claude
+- **Multi-Provider AI Integration** - Google Gemini, OpenAI, Anthropic Claude, OpenRouter
 
 ---
 
@@ -206,6 +207,7 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 - **Google Gemini AI** - Advanced AI model for summarization
 - **OpenAI GPT Models** - Powerful language models
 - **Anthropic Claude** - High-quality AI assistant
+- **OpenRouter** - Multi-model AI platform with automatic routing
 - **Buy Me a Coffee** - Support platform integration
 
 ### Privacy Policy

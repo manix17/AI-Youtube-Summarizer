@@ -4,7 +4,7 @@ This document outlines the plan to integrate the new options page with the YouTu
 
 ### **1. API Key Validation**
 
-The current implementation simulates API key validation with a `setTimeout` function. We will replace this with actual API calls to the respective platforms (OpenAI, Anthropic, and Google Gemini).
+The current implementation simulates API key validation with a `setTimeout` function. We will replace this with actual API calls to the respective platforms (OpenAI, Anthropic, OpenRouter, and Google Gemini).
 
 - **Create `api_tester.js`:** This new file will contain the logic for testing API keys. It will export a function that takes the platform, API key, and model as input and returns a promise that resolves or rejects based on the validation result.
 - **Update `background.js`:** We will add a message listener to handle API test requests from the options page. This listener will call the appropriate function in `api_tester.js` and send the result back to the options page.

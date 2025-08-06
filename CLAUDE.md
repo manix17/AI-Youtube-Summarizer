@@ -37,13 +37,14 @@ This is a Manifest V3 Chrome extension that uses AI to summarize YouTube videos 
 1. Content script detects YouTube video page and injects summarize UI
 2. User clicks summarize → content script extracts transcript and metadata
 3. Message sent to background script with transcript + selected profile/preset
-4. Background script calls appropriate AI API (OpenAI/Anthropic/Gemini)
+4. Background script calls appropriate AI API (OpenAI/Anthropic/OpenRouter/Gemini)
 5. Response processed and rendered as HTML in content script
 
 ### Multi-Provider AI Integration
-The extension supports three AI providers with a unified interface:
+The extension supports four AI providers with a unified interface:
 - **OpenAI** - GPT models via chat completions API
-- **Anthropic** - Claude models via messages API  
+- **Anthropic** - Claude models via messages API
+- **OpenRouter** - Access to multiple models via chat completions API (includes auto-routing to best available model)
 - **Gemini** - Google's models via generateContent API
 
 All API configurations are centralized in `utils/api.ts` with provider-specific request/response handling.

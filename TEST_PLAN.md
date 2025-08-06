@@ -94,7 +94,7 @@ To achieve the 90% coverage goal, the following areas must be prioritized:
 
 *   **Unit Tests:**
     *   **`dom_parser.ts`**: Create mock HTML strings representing various YouTube page layouts (with and without transcripts, different transcript formats) and assert that the parsing logic correctly extracts the data or fails gracefully.
-    *   **`api.ts` / `api_tester.ts`**: Test the request building logic for each supported AI platform (OpenAI, Anthropic, Gemini). Mock the `fetch` call and test that the function correctly handles different HTTP responses (200, 401, 429, 500).
+    *   **`api.ts` / `api_tester.ts`**: Test the request building logic for each supported AI platform (OpenAI, Anthropic, OpenRouter, Gemini). Mock the `fetch` call and test that the function correctly handles different HTTP responses (200, 401, 429, 500).
     *   **`options/index.ts`**: Mock `chrome.storage` and the DOM. Test all logic for profile management (add, delete, rename, update), API key validation, and prompt manipulation. Ensure every function and conditional branch is tested.
     *   **`background/index.ts`**: Mock `chrome.runtime`, `chrome.tabs`, and the API utility functions. Test all message listeners (`chrome.runtime.onMessage`). Ensure all logic paths, including error handling (e.g., `try...catch` blocks for API calls), are executed.
 

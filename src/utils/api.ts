@@ -17,7 +17,7 @@ import type {
 
 /**
  * Returns the API configuration for a given platform.
- * @param {Platform} platform - The AI platform (e.g., 'openai', 'gemini').
+ * @param {Platform} platform - The AI platform (e.g., 'openai', 'anthropic', 'openrouter', 'gemini').
  * @param {string} model - The specific model name.
  * @returns {ApiConfig} The configuration object for the platform.
  */
