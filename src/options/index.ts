@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="platform-stat">
             <div class="platform-name">
               <div class="platform-icon-small ${iconClass}">
-                ${platform === 'openai' ? '🤖' : platform === 'anthropic' ? '🧠' : '💎'}
+                ${platform === 'openai' ? '🤖' : platform === 'anthropic' ? '🧠' : platform === 'openrouter' ? '🚀' : '💎'}
               </div>
               ${platformName}
             </div>
@@ -545,8 +545,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function handlePlatformChange(): void {
+  function handlePlatformChange(): void {    
     updatePlatformBadge();
+    
+    // Clear API key field and in-memory profile
+    apiKeyInput.value = "";
+    profiles[currentProfileId].apiKey = "";
+
     modelSelect.innerHTML =
       '<option value="">-- Test API Key to load models --</option>';
     modelSelect.disabled = true;
@@ -1331,11 +1336,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!isSilent)
           showStatus("API key is valid! Models loaded.", "success");
         populateModelDropdown(response.models);
-        // Explicitly set the model after populating
-        const profile = profiles[currentProfileId];
-        if (profile.model) {
-          modelSelect.value = profile.model;
+        
+        // Only auto-select the first recommended model if no model is currently selected
+        if (!profiles[currentProfileId].model) {
+          const platform = platformSelect.value as Platform;
+          const config = platformConfigs[platform];
+          if (config?.models.length > 0) {
+            const firstModel = config.models[0].value;
+            modelSelect.value = firstModel;
+            profiles[currentProfileId].model = firstModel;
+            saveCurrentProfile();
+          }
         }
+
       } else if (response?.success) {
         if (!isSilent) showStatus("API key is valid!", "success");
         populateModelDropdown([]);

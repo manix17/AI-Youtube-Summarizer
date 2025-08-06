@@ -17,6 +17,16 @@
             { "value": "claude-3-haiku", "label": "Claude 3 Haiku" }
         ]
     },
+    "openrouter": {
+        "name": "🚀 OpenRouter",
+        "className": "openrouter",
+        "models": [
+            { "value": "openrouter/auto", "label": "Auto (best available)" },
+            { "value": "google/gemini-flash-1.5", "label": "Google: Gemini 1.5 Flash" },
+            { "value": "anthropic/claude-3-haiku", "label": "Anthropic: Claude 3 Haiku" },
+            { "value": "mistralai/mistral-7b-instruct", "label": "Mistral 7B Instruct" }
+        ]
+    },
     "gemini": {
         "name": "🔮 Google Gemini",
         "className": "gemini",

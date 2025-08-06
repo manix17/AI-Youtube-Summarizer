@@ -1,5 +1,32 @@
 import type { TestResult, Model, ApiErrorResponse } from "../types";
 
+export async function testOpenRouterApiKey(apiKey: string): Promise<TestResult> {
+  if (!apiKey || !apiKey.startsWith("sk-or-")) {
+    return { success: false, error: "Invalid OpenRouter API key format." };
+  }
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const data: ApiErrorResponse & { data: { id: string, name: string }[] } =
+      await response.json();
+    if (response.ok) {
+      const models: Model[] = data.data.map((model) => ({
+        name: model.id,
+        displayName: model.name,
+      }));
+      return { success: true, models: models };
+    } else {
+      return {
+        success: false,
+        error: data.error?.message || `HTTP Error: ${response.status}`,
+      };
+    }
+  } catch (error) {
+    return { success: false, error: "Network error or invalid response." };
+  }
+}
+
 export async function testOpenApiKey(apiKey: string): Promise<TestResult> {
   if (!apiKey || !apiKey.startsWith("sk-")) {
     return { success: false, error: "Invalid OpenAI API key format." };

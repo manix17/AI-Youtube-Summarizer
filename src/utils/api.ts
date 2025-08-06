@@ -26,6 +26,9 @@ function getApiConfig(platform: Platform, model: string): ApiConfig {
     openai: {
       url: "https://api.openai.com/v1/chat/completions",
     },
+    openrouter: {
+      url: "https://openrouter.ai/api/v1/chat/completions",
+    },
     anthropic: {
       url: "https://api.anthropic.com/v1/messages",
     },
@@ -53,6 +56,7 @@ function buildRequestPayload(
 ): ApiRequestPayload {
   switch (platform) {
     case "openai":
+    case "openrouter":
       return {
         model: model,
         messages: [
@@ -103,6 +107,11 @@ function buildRequestHeaders(
     case "openai":
       headers["Authorization"] = `Bearer ${apiKey}`;
       break;
+    case "openrouter":
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      headers["HTTP-Referer"] = "https://github.com/manix17/ai-youtube-summarizer";
+      headers["X-Title"] = "AI YouTube Summarizer";
+      break;
     case "anthropic":
       headers["x-api-key"] = apiKey;
       headers["anthropic-version"] = "2023-06-01";
@@ -130,6 +139,7 @@ function extractSummaryFromResponse(
 
     switch (platform) {
       case "openai":
+      case "openrouter":
         const openaiData = data as OpenAIResponse;
         summary = openaiData.choices[0].message.content;
         if (openaiData.usage) {
@@ -199,6 +209,7 @@ function handleApiError(
   try {
     switch (platform) {
       case "openai":
+      case "openrouter":
         message += errorData.error?.message || JSON.stringify(errorData);
         break;
       case "anthropic":

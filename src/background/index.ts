@@ -59,6 +59,8 @@ function handleTestApiKey(
     testPromise = apiTester.testAnthropicApiKey(apiKey);
   } else if (platform === "gemini") {
     testPromise = apiTester.testGeminiApiKey(apiKey);
+  } else if (platform === "openrouter") {
+    testPromise = apiTester.testOpenRouterApiKey(apiKey);
   } else {
     sendResponse({ success: false, error: "Invalid platform" });
     return;

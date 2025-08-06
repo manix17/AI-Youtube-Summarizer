@@ -597,6 +597,11 @@
         background: #edf2f7;
         color: #4a5568;
       }
+      
+      .platform-badge.openrouter {
+        background: #eef2ff;
+        color: #4f46e5;
+      }
 
       .preset-options {
         display: flex;
@@ -893,6 +898,10 @@
         background: linear-gradient(135deg, #4285f4, #1a73e8);
       }
 
+      .platform-icon-small.openrouter {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      }
+
       .platform-usage-info {
         text-align: right;
       }
@@ -997,6 +1006,7 @@
                 <div class="model-selector">
                   <select id="platform-select">
                     <option value="openai">OpenAI</option>
+                    <option value="openrouter">OpenRouter</option>
                     <option value="anthropic">Anthropic (Claude)</option>
                     <option value="gemini" selected>Google Gemini</option>
                   </select>

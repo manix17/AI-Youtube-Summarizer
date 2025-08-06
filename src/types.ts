@@ -112,7 +112,7 @@ export interface DefaultPrompts {
 }
 
 // --- AI & API Types ---
-export type Platform = "openai" | "anthropic" | "gemini";
+export type Platform = "openai" | "anthropic" | "gemini" | "openrouter";
 
 export interface ApiConfig {
   url: string;
@@ -136,6 +136,10 @@ export interface OpenAIResponse {
     total_tokens: number;
   };
 }
+
+// OpenRouter specific types (aliases for OpenAI types)
+export type OpenRouterRequest = OpenAIRequest;
+export type OpenRouterResponse = OpenAIResponse;
 
 // Anthropic specific types
 export interface AnthropicMessage {
@@ -204,8 +208,9 @@ export interface SummaryResult {
 export type ApiRequestPayload =
   | OpenAIRequest
   | AnthropicRequest
-  | GeminiRequest;
-export type ApiResponse = OpenAIResponse | AnthropicResponse | GeminiResponse;
+  | GeminiRequest
+  | OpenRouterRequest;
+export type ApiResponse = OpenAIResponse | AnthropicResponse | GeminiResponse | OpenRouterResponse;
 
 // Error types
 export interface ApiErrorResponse {
