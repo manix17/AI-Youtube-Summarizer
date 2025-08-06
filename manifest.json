@@ -36,7 +36,8 @@
         "assets/injector.js",
         "assets/css/summary.css",
         "assets/md_rendering_test.json",
-        "assets/prompts.json"
+        "assets/prompts.json",
+        "assets/supported_languages.json"
       ],
       "matches": ["*://www.youtube.com/*"]
     }

@@ -264,6 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       
+      await loadLanguages();
       await loadSettings();
       setupEventListeners();
       renderProfiles();
@@ -279,6 +280,31 @@ document.addEventListener("DOMContentLoaded", () => {
       showStatus("Failed to load configurations.", "error");
       // Clear the flag even if initialization fails
       isInitializing = false;
+    }
+  }
+
+  async function loadLanguages(): Promise<void> {
+    try {
+      const response = await fetch(chrome.runtime.getURL("assets/supported_languages.json"));
+      const languages = await response.json();
+      languageSelect.innerHTML = ""; // Clear existing options
+      for (const language of languages) {
+          const option = document.createElement("option");
+          option.value = language;
+          option.textContent = language;
+          languageSelect.appendChild(option);
+      }
+    } catch (error) {
+      console.error("Error loading languages:", error);
+      // Fallback to a minimal list if loading fails
+      const fallbackLanguages = ["English", "Spanish", "French"];
+      languageSelect.innerHTML = ""; // Clear existing options
+      for (const language of fallbackLanguages) {
+        const option = document.createElement("option");
+        option.value = language;
+        option.textContent = language;
+        languageSelect.appendChild(option);
+      }
     }
   }
   // Global variables for model search

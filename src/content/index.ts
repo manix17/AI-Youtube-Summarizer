@@ -329,7 +329,7 @@ async function loadProfiles() {
   });
 }
 
-function handleProfileChange() {
+async function handleProfileChange() {
   const profileSelect = document.getElementById(
     "profile-select"
   ) as HTMLSelectElement;
@@ -359,14 +359,27 @@ function handleProfileChange() {
   }
   if (profile) {
     languageSelect.innerHTML = "";
-    const languages = ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Korean", "Italian", "Portuguese", "Russian"];
-    for (const language of languages) {
+    try {
+      const response = await fetch(chrome.runtime.getURL("assets/supported_languages.json"));
+      const languages = await response.json();
+      for (const language of languages) {
+          const option = document.createElement("option");
+          option.value = language;
+          option.textContent = language;
+          languageSelect.appendChild(option);
+      }
+      languageSelect.value = profile.language || "English";
+    } catch (error) {
+      console.error("Error loading languages:", error);
+      // Fallback to a minimal list if loading fails
+      const fallbackLanguages = ["English", "Spanish", "French"];
+      for (const language of fallbackLanguages) {
         const option = document.createElement("option");
         option.value = language;
         option.textContent = language;
         languageSelect.appendChild(option);
+      }
     }
-    languageSelect.value = profile.language || "English";
   }
 }
 
