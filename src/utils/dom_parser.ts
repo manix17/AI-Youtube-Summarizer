@@ -111,31 +111,34 @@ export function convertHTMLToText(element: HTMLElement): string {
       
       switch (tagName) {
         case 'h3':
-          return `\n### ${processChildren(node)}\n\n`;
+          return `### ${processChildren(node).trim()}\n\n`;
         case 'p':
-          return `${processChildren(node)}\n\n`;
+          const pContent = processChildren(node).trim();
+          return pContent ? `${pContent}\n\n` : '';
         case 'ul':
         case 'ol':
-          return processChildren(node);
+          const listContent = processChildren(node).trim();
+          return listContent ? `${listContent}\n\n` : '';
         case 'li':
           const parentTag = el.parentElement?.tagName.toLowerCase();
-          const prefix = parentTag === 'ol' ? '1. ' : '* ';
-          // Calculate depth by counting nested list ancestors
+          const prefix = parentTag === 'ol' ? '1. ' : '- ';
           const depth = getListDepth(el);
-          const indent = "    ".repeat(depth);
-          return `${indent}${prefix}${processChildren(node).trim()}\n`;
+          const indent = "  ".repeat(depth); // Use 2 spaces for better readability
+          const liContent = processChildren(node).trim();
+          return liContent ? `${indent}${prefix}${liContent}\n` : '';
         case 'strong':
-          return `**${processChildren(node)}**`;
+          return `**${processChildren(node).trim()}**`;
         case 'code':
-          return `\`${processChildren(node)}\``;
+          return `\`${processChildren(node).trim()}\``;
         case 'em':
-          return processChildren(node);
+          return `*${processChildren(node).trim()}*`;
         case 'a':
           const linkElement = el as HTMLAnchorElement;
           if (linkElement.classList.contains('timestamp-link')) {
-            return linkElement.textContent || '';
+            // Format timestamps with brackets for clarity
+            return `[${linkElement.textContent || ''}]`;
           } else {
-            return `[${processChildren(node)}](${linkElement.href})`;
+            return `[${processChildren(node).trim()}](${linkElement.href})`;
           }
         default:
           return processChildren(node);
@@ -170,8 +173,9 @@ export function convertHTMLToText(element: HTMLElement): string {
   
   let result = processNode(element);
   
-  // Clean up extra newlines
-  result = result.replace(/\n{3,}/g, '\n\n');
+  // Clean up excessive newlines while preserving paragraph structure
+  result = result.replace(/\n{4,}/g, '\n\n\n'); // Max 3 newlines
+  result = result.replace(/\n{3,}/g, '\n\n'); // Convert 3+ newlines to 2
   result = result.trim();
   
   return result;

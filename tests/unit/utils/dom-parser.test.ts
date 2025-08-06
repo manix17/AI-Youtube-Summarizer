@@ -193,7 +193,7 @@ describe("DOM Parser Utils", () => {
       document.body.appendChild(div);
       
       const result = convertHTMLToText(div);
-      expect(result).toBe("* First item\n* Second item");
+      expect(result).toBe("- First item\n- Second item");
     });
 
     it("should convert ordered lists with proper indentation", () => {
@@ -221,9 +221,9 @@ describe("DOM Parser Utils", () => {
       document.body.appendChild(div);
       
       const result = convertHTMLToText(div);
-      expect(result).toContain("* Top level item");
-      expect(result).toContain("    * Nested item 1");
-      expect(result).toContain("    * Nested item 2");
+      expect(result).toContain("- Top level item");
+      expect(result).toContain("  - Nested item 1");
+      expect(result).toContain("  - Nested item 2");
     });
 
     it("should preserve bold and code formatting", () => {
@@ -241,7 +241,7 @@ describe("DOM Parser Utils", () => {
       document.body.appendChild(div);
       
       const result = convertHTMLToText(div);
-      expect(result).toBe("At 1:23 something happens");
+      expect(result).toBe("At [1:23] something happens");
     });
 
     it("should handle mixed content with proper formatting", () => {
@@ -259,8 +259,8 @@ describe("DOM Parser Utils", () => {
       const result = convertHTMLToText(div);
       expect(result).toContain("### Summary");
       expect(result).toContain("This is a paragraph with **bold** text.");
-      expect(result).toContain("* First point");
-      expect(result).toContain("* Second point with `code`");
+      expect(result).toContain("- First point");
+      expect(result).toContain("- Second point with `code`");
     });
 
     it("should handle empty elements gracefully", () => {
@@ -294,7 +294,7 @@ This is a paragraph with **bold** text.
       // Should maintain basic structure
       expect(roundTripText).toContain("### Test Heading");
       expect(roundTripText).toContain("**bold**");
-      expect(roundTripText).toContain("* First item");
+      expect(roundTripText).toContain("- First item");
       expect(roundTripText).toContain("1. Numbered item");
     });
   });
