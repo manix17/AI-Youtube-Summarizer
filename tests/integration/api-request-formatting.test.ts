@@ -58,6 +58,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Test Video",
         "5:30",
         "Test Channel",
+        "Test description",
         "English"
       );
 
@@ -66,7 +67,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer test-api-key",
+            "Authorization": "Bearer test-openai-key",
             "Content-Type": "application/json",
           }),
           body: expect.stringContaining("messages"),
@@ -99,6 +100,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "My Test Video",
         "10:45",
         "My Channel",
+        "Test description",
         "English"
       );
 
@@ -129,6 +131,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Test Video",
         "3:45",
         "Test Channel",
+        "Test description",
         "English"
       );
 
@@ -137,7 +140,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "x-api-key": "test-api-key",
+            "x-api-key": "test-anthropic-key",
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
           }),
@@ -171,6 +174,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Anthropic Video",
         "7:20",
         "Claude Channel",
+        "Test description",
         "Spanish"
       );
 
@@ -201,12 +205,13 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Gemini Test",
         "2:15",
         "Google Channel",
+        "Test description",
         "English"
       );
 
       const callUrl = mockFetch.mock.calls[0][0];
       expect(callUrl).toContain("generativelanguage.googleapis.com");
-      expect(callUrl).toContain("key=test-api-key");
+      expect(callUrl).toContain("key=test-gemini-key");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       
@@ -233,6 +238,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Amazing Gemini Video",
         "15:30",
         "AI Channel",
+        "Test description",
         "French"
       );
 
@@ -259,7 +265,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
       });
 
       await expect(
-        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "English")
+        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English")
       ).rejects.toThrow("Could not generate summary");
     });
 
@@ -275,7 +281,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
       });
 
       await expect(
-        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "English")
+        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English")
       ).rejects.toThrow("Could not generate summary");
     });
 
@@ -291,7 +297,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
       });
 
       await expect(
-        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "English")
+        generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English")
       ).rejects.toThrow("Could not generate summary");
     });
   });
@@ -306,7 +312,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         json: async () => ({ choices: [{ message: { content: "Test" } }] }),
       });
 
-      await generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "English");
+      await generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(requestBody.temperature).toBe(1.2);
@@ -321,10 +327,10 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         json: async () => ({ content: [{ text: "Test" }] }),
       });
 
-      await generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "English");
+      await generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(requestBody.model).toBe("claude-3-opus");
+      expect(requestBody.model).toBe("claude-3-opus-20240229");
     });
   });
 
@@ -346,10 +352,11 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Long Video",
         "50:00",
         "Channel",
+        "Test description",
         "English"
       );
 
-      expect(result).toBe("Large summary");
+      expect(result.summary).toBe("Large summary");
       
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       const userMessage = requestBody.messages[1].content;
@@ -373,6 +380,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
         "Spëcial Video! 🎬",
         "1:30",
         "Channel & Co",
+        "Test description",
         "English"
       );
 

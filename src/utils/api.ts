@@ -252,6 +252,8 @@ function handleApiError(
  * @param {string} videoTitle - The title of the video.
  * @param {string} videoDuration - The duration of the video.
  * @param {string} channelName - The name of the channel.
+ * @param {string} videoDescription - The description of the video.
+ * @param {string} language - The target language for the summary.
  * @returns {Promise<SummaryResult>} A promise that resolves with the summary and token usage.
  */
 export async function generateSummary(
@@ -260,6 +262,7 @@ export async function generateSummary(
   videoTitle: string,
   videoDuration: string,
   channelName: string,
+  videoDescription: string,
   language: string
 ): Promise<SummaryResult> {
   const { platform, models, apiKeys, presets, currentPreset } = profile;
@@ -285,6 +288,7 @@ export async function generateSummary(
     .replace("{VIDEO_TITLE}", videoTitle)
     .replace("{VIDEO_DURATION}", videoDuration)
     .replace("{CHANNEL_NAME}", channelName)
+    .replace("{VIDEO_DESCRIPTION}", videoDescription)
     .replace("{TARGET_LANGUAGE}", language);
 
   const apiConfig = getApiConfig(platform, model);

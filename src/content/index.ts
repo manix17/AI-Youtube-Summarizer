@@ -739,9 +739,36 @@ async function getTranscript(): Promise<string> {
 
 /**
  * Extracts video metadata from the page.
- * @returns {VideoMetadata} An object containing video title, duration, and channel name.
+ * @returns {VideoMetadata} An object containing video title, duration, channel name, and description.
  */
 function getVideoMetadata(): VideoMetadata {
+  // Get video description from the expandable description section
+  let videoDescription = "N/A";
+  
+  // Try to get description from the expanded description area
+  const descriptionElement = document.querySelector<HTMLElement>(
+    "ytd-watch-metadata #description-inline-expander #description-text"
+  );
+  if (descriptionElement) {
+    videoDescription = descriptionElement.innerText?.trim() || "N/A";
+  } else {
+    // Fallback: Try to get from collapsed description
+    const collapsedDescElement = document.querySelector<HTMLElement>(
+      "ytd-watch-metadata #description.ytd-watch-metadata"
+    );
+    if (collapsedDescElement) {
+      videoDescription = collapsedDescElement.innerText?.trim() || "N/A";
+    } else {
+      // Another fallback: Try meta description
+      const metaDesc = document.querySelector<HTMLMetaElement>(
+        'meta[name="description"]'
+      );
+      if (metaDesc && metaDesc.content) {
+        videoDescription = metaDesc.content.trim();
+      }
+    }
+  }
+
   return {
     videoTitle:
       document.querySelector<HTMLElement>("h1.style-scope.ytd-watch-metadata")
@@ -755,6 +782,7 @@ function getVideoMetadata(): VideoMetadata {
     videoDuration:
       document.querySelector<HTMLElement>(".ytp-time-duration")?.innerText ||
       "N/A",
+    videoDescription: videoDescription,
   };
 }
 

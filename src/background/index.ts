@@ -184,6 +184,7 @@ async function handleSummarize(
       request.payload.videoTitle,
       request.payload.videoDuration,
       request.payload.channelName,
+      request.payload.videoDescription,
       request.payload.language
     );
 

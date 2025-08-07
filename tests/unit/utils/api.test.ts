@@ -45,6 +45,7 @@ describe("API Utils", () => {
     const mockVideoTitle = "Test Video";
     const mockVideoDuration = "10";
     const mockChannelName = "Test Channel";
+    const mockVideoDescription = "This is a test video description.";
     const mockLanguage = "English";
 
     it("should generate summary using OpenAI", async () => {
@@ -68,6 +69,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 
@@ -81,7 +83,7 @@ describe("API Utils", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer test-key",
+            "Authorization": "Bearer test-openai-key",
             "Content-Type": "application/json",
           }),
         })
@@ -108,6 +110,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 
@@ -121,7 +124,7 @@ describe("API Utils", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "x-api-key": "test-key",
+            "x-api-key": "test-anthropic-key",
             "Content-Type": "application/json",
           }),
         })
@@ -150,6 +153,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 
@@ -187,6 +191,7 @@ describe("API Utils", () => {
           mockVideoTitle,
           mockVideoDuration,
           mockChannelName,
+          mockVideoDescription,
           mockLanguage
         )
       ).rejects.toThrow("Could not generate summary");
@@ -204,6 +209,7 @@ describe("API Utils", () => {
           mockVideoTitle,
           mockVideoDuration,
           mockChannelName,
+          mockVideoDescription,
           mockLanguage
         )
       ).rejects.toThrow("Could not generate summary");
@@ -226,6 +232,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 
@@ -255,6 +262,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 
@@ -284,6 +292,7 @@ describe("API Utils", () => {
           mockVideoTitle,
           mockVideoDuration,
           mockChannelName,
+          mockVideoDescription,
           mockLanguage
         )
       ).rejects.toThrow("Could not generate summary");
@@ -306,6 +315,7 @@ describe("API Utils", () => {
         mockVideoTitle,
         mockVideoDuration,
         mockChannelName,
+        mockVideoDescription,
         mockLanguage
       );
 

@@ -270,6 +270,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -301,6 +302,7 @@ describe("Background Script", () => {
         "Test Video",
         "10:30",
         "Test Channel",
+        "Test description",
         "English"
       );
 
@@ -322,6 +324,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -360,6 +363,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -369,7 +373,7 @@ describe("Background Script", () => {
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: "summarizeResponse",
-        error: 'Error: API key for profile "default" is missing.',
+        error: 'Error: API key for openai provider is missing in profile "default".',
       });
     });
 
@@ -390,6 +394,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -399,7 +404,7 @@ describe("Background Script", () => {
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: "summarizeResponse",
-        error: 'Error: API key for profile "nonexistent" is missing.',
+        error: 'Error: Profile "nonexistent" not found.',
       });
     });
 
@@ -432,6 +437,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -474,6 +480,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -534,6 +541,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "10:30",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -643,6 +651,7 @@ describe("Background Script", () => {
           videoTitle: "Test Video",
           videoDuration: "5:00",
           channelName: "Test Channel",
+          videoDescription: "Test description",
         },
       };
 
@@ -689,6 +698,7 @@ describe("Background Script", () => {
         "Test Video",
         "5:00",
         "Test Channel",
+        "Test description",
         "Spanish"
       );
 
