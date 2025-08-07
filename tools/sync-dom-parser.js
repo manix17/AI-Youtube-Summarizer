@@ -100,6 +100,11 @@ function manualConversion() {
         .replace(/function\([^)]*\)/g, (match) => {
             return match.replace(/:\s*[^,)]+/g, '');
         })
+        // Remove parameter type annotations from arrow functions and callbacks
+        .replace(/\(([^)]*)\)\s*=>/g, (match, params) => {
+            const cleanParams = params.replace(/:\s*[^,)]+/g, '');
+            return `(${cleanParams}) =>`;
+        })
         // Handle object destructuring parameters with type annotations - more comprehensive
         .replace(/function\s*\(\{[^}]*\}:\s*\{[^}]*\}\)/g, (match) => {
             // Extract just the destructuring pattern without types

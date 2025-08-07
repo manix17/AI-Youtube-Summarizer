@@ -77,6 +77,47 @@ function applyTimestampLinks(html: string): string {
 }
 
 /**
+ * Apply syntax highlighting to code blocks in HTML
+ */
+function applyCodeHighlighting(html: string): string {
+  // Find code blocks and apply highlighting
+  return html.replace(/<pre><code(?:\s+class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g, 
+    (match, language: string | undefined, code: string) => {
+      // Decode HTML entities more comprehensively
+      code = code
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&#x27;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&'); // Keep &amp; last to avoid double-decoding
+      
+      // Check if hljs is available
+      if (typeof hljs !== 'undefined') {
+        try {
+          if (language && hljs.getLanguage(language)) {
+            // Language specified and supported
+            const highlighted = hljs.highlight(code, { language }).value;
+            return `<pre class="hljs"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+          } else {
+            // Auto-detect language
+            const highlighted = hljs.highlightAuto(code);
+            const detectedLanguage = highlighted.language || 'plaintext';
+            return `<pre class="hljs"><code class="hljs language-${detectedLanguage}">${highlighted.value}</code></pre>`;
+          }
+        } catch (error) {
+          console.warn('Highlight.js error:', error);
+        }
+      }
+      
+      // Fallback when hljs is not available or fails
+      const langClass = language ? ` language-${language}` : '';
+      return `<pre class="hljs"><code class="hljs${langClass}">${code}</code></pre>`;
+    });
+}
+
+/**
  * Converts HTML back to markdown-like formatted text with proper indentation.
  * @param {HTMLElement} element - The HTML element to convert.
  * @returns {string} The formatted text.
@@ -186,42 +227,17 @@ export function convertToHTML(text: string): string {
   // Preprocess the text to handle escaped JSON strings
   text = preprocessText(text);
   
-  // Configure marked.js with syntax highlighting
-  const renderer = new marked.Renderer();
-  
-  // Custom code block renderer with highlight.js integration
-  renderer.code = function({text, lang, escaped}: {text: string, lang?: string, escaped?: boolean}) {
-    const code = text;
-    const language = lang;
-    
-    // Check if hljs is available (for browser environments)
-    if (typeof hljs !== 'undefined') {
-      if (language && hljs.getLanguage(language)) {
-        // Language specified and supported
-        const highlighted = hljs.highlight(code, { language }).value;
-        return `<pre class="hljs"><code class="hljs language-${language}">${highlighted}</code></pre>`;
-      } else {
-        // Auto-detect language
-        const highlighted = hljs.highlightAuto(code);
-        const detectedLanguage = highlighted.language || 'plaintext';
-        return `<pre class="hljs"><code class="hljs language-${detectedLanguage}">${highlighted.value}</code></pre>`;
-      }
-    } else {
-      // Fallback when hljs is not available
-      const langClass = language ? ` language-${language}` : '';
-      return `<pre class="hljs"><code class="hljs${langClass}">${code}</code></pre>`;
-    }
-  };
-  
-  // Use marked.js to parse markdown to HTML with custom renderer
+  // Use marked.js to parse markdown to HTML
   const rawHtml = marked(text, {
     breaks: true, // Convert line breaks to <br>
     gfm: true, // GitHub Flavored Markdown
-    renderer: renderer
   }) as string;
   
-  // Apply timestamp processing after marked.js parsing
-  const processedHtml = applyTimestampLinks(rawHtml);
+  // Apply syntax highlighting after marked.js parsing
+  const highlightedHtml = applyCodeHighlighting(rawHtml);
+  
+  // Apply timestamp processing after highlighting  
+  const processedHtml = applyTimestampLinks(highlightedHtml);
   
   // Sanitize the HTML with DOMPurify, allowing our custom timestamp links
   const cleanHtml = DOMPurify.sanitize(processedHtml, {
