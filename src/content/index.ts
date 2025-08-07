@@ -57,8 +57,9 @@ function injectSummarizeUI(): void {
     // ... (rest of the summary container setup is the same)
     const closeButton = document.createElement("button");
     closeButton.id = "close-summary-btn";
+    closeButton.setAttribute("data-tooltip", "Close Summary");
     closeButton.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="m12.71 12 8.15 8.15-.71.71L12 12.71l-8.15 8.15-.71-.71L11.29 12 3.15 3.85l.71-.71L12 11.29l8.15-8.15.71.71L12.71 12z"></path></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 0 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>';
     closeButton.classList.add("close-summary-btn");
     closeButton.addEventListener("click", () => {
       summaryContainer.style.display = "none";
@@ -66,31 +67,44 @@ function injectSummarizeUI(): void {
 
     const copyButton = document.createElement("button");
     copyButton.id = "copy-summary-btn";
-    copyButton.title = "Copy to Clipboard";
+    copyButton.setAttribute("data-tooltip", "Copy to Clipboard");
     copyButton.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M15 1H4c-1.1 0-2 .9-2 2v14h2V3h11V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h10v14z"></path></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
     copyButton.classList.add("copy-summary-btn");
     copyButton.addEventListener("click", handleCopyToClipboard);
 
     const downloadButton = document.createElement("button");
     downloadButton.id = "download-summary-btn";
-    downloadButton.title = "Download Summary";
-    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>`;
+    downloadButton.setAttribute("data-tooltip", "Download as Markdown");
+    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>`;
     downloadButton.classList.add("download-summary-btn");
     downloadButton.addEventListener("click", handleDownloadSummary);
 
-    const buttonContainer = document.createElement("div");
-    buttonContainer.classList.add("summary-button-container");
-    buttonContainer.appendChild(downloadButton);
-    buttonContainer.appendChild(copyButton);
-    buttonContainer.appendChild(closeButton);
-    summaryContainer.appendChild(buttonContainer);
+    const fullscreenButton = document.createElement("button");
+    fullscreenButton.id = "fullscreen-summary-btn";
+    fullscreenButton.setAttribute("data-tooltip", "Open in New Window");
+    fullscreenButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
+    fullscreenButton.classList.add("fullscreen-summary-btn");
+    fullscreenButton.addEventListener("click", handleFullscreenSummary);
 
     const summaryContent = document.createElement("div");
     summaryContent.id = "summary-content";
     summaryContainer.appendChild(summaryContent);
 
-    targetElement.prepend(summaryContainer);
+    const buttonContainer = document.createElement("div");
+    buttonContainer.classList.add("summary-button-container");
+    buttonContainer.appendChild(fullscreenButton);
+    buttonContainer.appendChild(downloadButton);
+    buttonContainer.appendChild(copyButton);
+    buttonContainer.appendChild(closeButton);
+
+    // Create a wrapper to hold both summary container and button container
+    const summaryWrapper = document.createElement("div");
+    summaryWrapper.classList.add("summary-wrapper");
+    summaryWrapper.appendChild(summaryContainer);
+    summaryWrapper.appendChild(buttonContainer);
+
+    targetElement.prepend(summaryWrapper);
     targetElement.prepend(uiContainer);
 
     button.addEventListener("click", handleSummarizeClick);
@@ -116,11 +130,15 @@ function applyCurrentTheme(): void {
   const targetNode = document.documentElement;
   const isDarkMode = targetNode.hasAttribute("dark");
   const summaryContainer = document.getElementById("summary-container");
+  const summaryWrapper = document.querySelector(".summary-wrapper");
   const uiContainer = document.getElementById("summarize-ui-container");
   
   
   if (summaryContainer) {
     summaryContainer.classList.toggle("dark", isDarkMode);
+  }
+  if (summaryWrapper) {
+    summaryWrapper.classList.toggle("dark", isDarkMode);
   }
   if (uiContainer) {
     uiContainer.classList.toggle("dark", isDarkMode);
@@ -168,6 +186,133 @@ function handleDownloadSummary(): void {
 }
 
 /**
+ * Handles the click event for the fullscreen summary button.
+ */
+function handleFullscreenSummary(): void {
+  const summaryContent = document.querySelector<HTMLElement>(".markdown-content");
+  const videoTitle = getVideoMetadata().videoTitle;
+  
+  if (summaryContent) {
+    // Create a new window with the summary content
+    const fullscreenWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    if (fullscreenWindow) {
+      // First, write the HTML structure
+      fullscreenWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Summary - ${videoTitle}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              max-width: 900px;
+              margin: 0 auto;
+              padding: 40px 20px;
+              line-height: 1.6;
+              color: #333;
+              background: #fff;
+            }
+            .header {
+              border-bottom: 2px solid #eee;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 1.8rem;
+              color: #1a202c;
+            }
+            .summary-content {
+              font-size: 16px;
+              line-height: 1.7;
+            }
+            .summary-content h1 { font-size: 2.2em; color: #1a202c; margin: 24px 0 16px 0; }
+            .summary-content h2 { font-size: 1.8em; color: #2563eb; margin: 20px 0 14px 0; }
+            .summary-content h3 { font-size: 1.5em; color: #1d4ed8; margin: 18px 0 12px 0; }
+            .summary-content p { margin-bottom: 16px; }
+            .summary-content ul, .summary-content ol { margin-bottom: 16px; padding-left: 20px; }
+            .summary-content li { margin-bottom: 8px; }
+            .summary-content strong { color: #1a202c; font-weight: 600; }
+            .summary-content code {
+              background: #f7fafc;
+              color: #e53e3e;
+              padding: 3px 6px;
+              border-radius: 4px;
+              font-family: "Monaco", "Menlo", "Consolas", monospace;
+            }
+            .summary-content pre {
+              background: #f8f9fa;
+              border: 1px solid #e9ecef;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+              overflow-x: auto;
+              font-family: "Monaco", "Menlo", "Consolas", monospace;
+              font-size: 0.9em;
+            }
+            .summary-content pre code {
+              background: none;
+              color: inherit;
+              padding: 0;
+            }
+            .timestamp-link {
+              color: #2563eb;
+              text-decoration: underline;
+              cursor: pointer;
+            }
+            .timestamp-link:hover {
+              color: #1d4ed8;
+            }
+            @media (prefers-color-scheme: dark) {
+              body { background: #1a1a1a; color: #e5e5e5; }
+              .header { border-color: #444; }
+              .header h1 { color: #fff; }
+              .summary-content h1 { color: #fff; }
+              .summary-content h2 { color: #60a5fa; }
+              .summary-content h3 { color: #93c5fd; }
+              .summary-content strong { color: #fff; }
+              .summary-content code { background: #374151; color: #fca5a5; }
+              .summary-content pre { background: #1f2937; border-color: #374151; }
+              .timestamp-link { color: #60a5fa; }
+              .timestamp-link:hover { color: #93c5fd; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>📋 Video Summary</h1>
+            <p><strong>Video:</strong> ${videoTitle}</p>
+          </div>
+          <div class="summary-content">
+            ${summaryContent.innerHTML}
+          </div>
+        </body>
+        </html>
+      `);
+      fullscreenWindow.document.close();
+      
+      // Add the event listener programmatically to avoid CSP issues
+      fullscreenWindow.document.addEventListener('click', function(e: Event) {
+        const target = e.target as HTMLElement;
+        if (target && target.classList.contains('timestamp-link')) {
+          e.preventDefault();
+          const seconds = target.dataset.seconds;
+          if (seconds && window.opener) {
+            window.opener.postMessage({
+              type: 'seekToTime',
+              seconds: parseInt(seconds)
+            }, '*');
+          }
+        }
+      });
+    }
+  }
+}
+
+/**
  * Handles the click event for the copy to clipboard button.
  */
 function handleCopyToClipboard(): void {
@@ -203,10 +348,10 @@ function handleCopyToClipboard(): void {
       "copy-summary-btn"
     ) as HTMLButtonElement;
     copyButton.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
     setTimeout(() => {
       copyButton.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: block; width: 100%; height: 100%; fill: currentcolor;"><path d="M15 1H4c-1.1 0-2 .9-2 2v14h2V3h11V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h10v14z"></path></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
     }, 2000);
   }
 }
@@ -778,5 +923,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "GET_VIDEO_METADATA") {
     const metadata = getVideoMetadata();
     sendResponse({ payload: metadata });
+  }
+});
+
+// Listen for messages from fullscreen windows
+window.addEventListener("message", (event) => {
+  if (event.data?.type === 'seekToTime') {
+    const seconds = event.data.seconds;
+    const player = document.querySelector<HTMLVideoElement>("video");
+    if (player && typeof seconds === 'number') {
+      player.currentTime = seconds;
+    }
   }
 });
