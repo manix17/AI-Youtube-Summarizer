@@ -77,6 +77,58 @@ function applyTimestampLinks(html: string): string {
 }
 
 /**
+ * Add target="_blank" and rel="noopener noreferrer" to external links
+ */
+function addTargetBlankToLinks(html: string): string {
+  return html.replace(/<a\s+([^>]*href="[^"]*"[^>]*)>/gi, (match, attributes) => {
+    // Skip if it's already a timestamp link (internal functionality)
+    if (attributes.includes('class="timestamp-link')) {
+      return match;
+    }
+    
+    // Skip if it's a relative link or anchor link
+    const hrefMatch = attributes.match(/href="([^"]*)"/i);
+    if (hrefMatch) {
+      const href = hrefMatch[1];
+      // Skip internal links (anchors, relative paths)
+      if (href.startsWith('#') || href.startsWith('/') || href.startsWith('./') || href.startsWith('../')) {
+        return match;
+      }
+    }
+    
+    // Check if target and rel attributes already exist
+    const hasTarget = /target\s*=/i.test(attributes);
+    const hasRel = /rel\s*=/i.test(attributes);
+    
+    let newAttributes = attributes;
+    
+    // Add target="_blank" if not present
+    if (!hasTarget) {
+      newAttributes += ' target="_blank"';
+    }
+    
+    // Add or update rel attribute with noopener noreferrer
+    if (!hasRel) {
+      newAttributes += ' rel="noopener noreferrer"';
+    } else {
+      // Update existing rel attribute to include noopener noreferrer
+      newAttributes = newAttributes.replace(/rel\s*=\s*"([^"]*)"/i, (relMatch: string, relValue: string) => {
+        const relParts = relValue.split(/\s+/);
+        if (!relParts.includes('noopener')) {
+          relParts.push('noopener');
+        }
+        if (!relParts.includes('noreferrer')) {
+          relParts.push('noreferrer');
+        }
+        return `rel="${relParts.join(' ')}"`;
+      });
+    }
+    
+    return `<a ${newAttributes}>`;
+  });
+}
+
+/**
  * Apply syntax highlighting to code blocks in HTML
  */
 function applyCodeHighlighting(html: string): string {
@@ -242,7 +294,10 @@ export function convertToHTML(text: string): string {
   const highlightedHtml = applyCodeHighlighting(rawHtml);
   
   // Apply timestamp processing after highlighting  
-  const processedHtml = applyTimestampLinks(highlightedHtml);
+  const timestampHtml = applyTimestampLinks(highlightedHtml);
+  
+  // Make external links open in new tabs
+  const processedHtml = addTargetBlankToLinks(timestampHtml);
   
   // Sanitize the HTML with DOMPurify, allowing our custom timestamp links
   const cleanHtml = DOMPurify.sanitize(processedHtml, {
@@ -253,7 +308,7 @@ export function convertToHTML(text: string): string {
       'a', 'span'
     ],
     ALLOWED_ATTR: [
-      'href', 'data-seconds', 'class',
+      'href', 'data-seconds', 'class', 'target', 'rel',
       'data-*' // Allow all data attributes for timestamp functionality
     ],
     ALLOW_DATA_ATTR: true
