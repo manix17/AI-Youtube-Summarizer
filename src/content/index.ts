@@ -453,7 +453,7 @@ async function handleSummarizeClick(): Promise<void> {
   loadingInterval = window.setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     updateSummaryContent(getProgressiveLoadingMessage(elapsed));
-  }, 4000);
+  }, 3000);
 
   try {
     const transcript = await getTranscript();
