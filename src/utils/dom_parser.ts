@@ -82,7 +82,7 @@ function applyTimestampLinks(html: string): string {
 function applyCodeHighlighting(html: string): string {
   // Find code blocks and apply highlighting
   return html.replace(/<pre><code(?:\s+class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g, 
-    (match, language: string | undefined, code: string) => {
+    (_, language: string | undefined, code: string) => {
       // Decode HTML entities more comprehensively
       code = code
         .replace(/&lt;/g, '<')
@@ -99,12 +99,15 @@ function applyCodeHighlighting(html: string): string {
           if (language && hljs.getLanguage(language)) {
             // Language specified and supported
             const highlighted = hljs.highlight(code, { language }).value;
-            return `<pre class="hljs"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+            const languageDisplay = language.charAt(0).toUpperCase() + language.slice(1);
+            return `<pre class="hljs" data-language="${languageDisplay}"><code class="hljs language-${language}">${highlighted}</code></pre>`;
           } else {
             // Auto-detect language
             const highlighted = hljs.highlightAuto(code);
             const detectedLanguage = highlighted.language || 'plaintext';
-            return `<pre class="hljs"><code class="hljs language-${detectedLanguage}">${highlighted.value}</code></pre>`;
+            const languageDisplay = detectedLanguage === 'plaintext' ? 'Text' : 
+                                  detectedLanguage.charAt(0).toUpperCase() + detectedLanguage.slice(1);
+            return `<pre class="hljs" data-language="${languageDisplay}"><code class="hljs language-${detectedLanguage}">${highlighted.value}</code></pre>`;
           }
         } catch (error) {
           console.warn('Highlight.js error:', error);
@@ -113,7 +116,9 @@ function applyCodeHighlighting(html: string): string {
       
       // Fallback when hljs is not available or fails
       const langClass = language ? ` language-${language}` : '';
-      return `<pre class="hljs"><code class="hljs${langClass}">${code}</code></pre>`;
+      const languageDisplay = language ? 
+        language.charAt(0).toUpperCase() + language.slice(1) : 'Code';
+      return `<pre class="hljs" data-language="${languageDisplay}"><code class="hljs${langClass}">${code}</code></pre>`;
     });
 }
 

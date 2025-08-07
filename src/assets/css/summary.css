@@ -318,7 +318,7 @@
 }
 
 .markdown-content pre::before {
-  content: "Code";
+  content: attr(data-language);
   position: absolute;
   top: 8px;
   right: 12px;
