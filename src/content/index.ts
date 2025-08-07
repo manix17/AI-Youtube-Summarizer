@@ -55,15 +55,13 @@ function injectSummarizeUI(): void {
     summaryContainer.style.display = "none";
 
     // ... (rest of the summary container setup is the same)
-    const closeButton = document.createElement("button");
-    closeButton.id = "close-summary-btn";
-    closeButton.setAttribute("data-tooltip", "Close Summary");
-    closeButton.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block;"><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 0 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>';
-    closeButton.classList.add("close-summary-btn");
-    closeButton.addEventListener("click", () => {
-      summaryContainer.style.display = "none";
-    });
+    const toggleButton = document.createElement("button");
+    toggleButton.id = "toggle-summary-btn";
+    toggleButton.setAttribute("data-tooltip", "Hide Summary");
+    toggleButton.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+    toggleButton.classList.add("toggle-summary-btn");
+    toggleButton.addEventListener("click", handleToggleSummary);
 
     const copyButton = document.createElement("button");
     copyButton.id = "copy-summary-btn";
@@ -96,7 +94,7 @@ function injectSummarizeUI(): void {
     buttonContainer.appendChild(fullscreenButton);
     buttonContainer.appendChild(downloadButton);
     buttonContainer.appendChild(copyButton);
-    buttonContainer.appendChild(closeButton);
+    buttonContainer.appendChild(toggleButton);
 
     // Create a wrapper to hold both summary container and button container
     const summaryWrapper = document.createElement("div");
@@ -162,6 +160,32 @@ function setupDarkModeObserver(): void {
 
   const observer = new MutationObserver(callback);
   observer.observe(targetNode, config);
+}
+
+/**
+ * Handles the click event for the toggle summary button.
+ */
+function handleToggleSummary(): void {
+  const summaryContainer = document.getElementById("summary-container");
+  const toggleButton = document.getElementById("toggle-summary-btn");
+  
+  if (summaryContainer && toggleButton) {
+    const isHidden = summaryContainer.classList.contains("hidden");
+    
+    if (isHidden) {
+      // Show the container
+      summaryContainer.classList.remove("hidden");
+      toggleButton.setAttribute("data-tooltip", "Hide Summary");
+      toggleButton.innerHTML = 
+        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+    } else {
+      // Hide the container
+      summaryContainer.classList.add("hidden");
+      toggleButton.setAttribute("data-tooltip", "Show Summary");
+      toggleButton.innerHTML = 
+        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
+    }
+  }
 }
 
 function handleDownloadSummary(): void {
@@ -571,6 +595,7 @@ async function handleSummarizeClick(): Promise<void> {
   const summaryContainer = document.getElementById(
     "summary-container"
   ) as HTMLDivElement;
+  const toggleButton = document.getElementById("toggle-summary-btn");
   const profileSelect = document.getElementById(
     "profile-select"
   ) as HTMLSelectElement;
@@ -583,7 +608,17 @@ async function handleSummarizeClick(): Promise<void> {
 
   button.innerText = "⏳ Summarizing...";
   button.disabled = true;
+  
+  // Always show the summary container when generating a new summary
   summaryContainer.style.display = "block";
+  summaryContainer.classList.remove("hidden");
+  
+  // Update the toggle button to reflect the visible state
+  if (toggleButton) {
+    toggleButton.setAttribute("data-tooltip", "Hide Summary");
+    toggleButton.innerHTML = 
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+  }
 
   const metadata = getVideoMetadata();
   const initialMessage = getContextualLoadingMessage(
