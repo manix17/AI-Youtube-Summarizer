@@ -769,6 +769,30 @@ function getVideoMetadata(): VideoMetadata {
     }
   }
 
+  // Get video upload date from various possible locations
+  let videoDate = "N/A";
+  
+  // Try multiple selectors to find upload date
+  const dateSelectors = [
+    "#info-strings yt-formatted-string:not([aria-label])",
+    "#info #date yt-formatted-string",
+    "#info-container #date-text",
+    ".ytd-video-primary-info-renderer #info-strings yt-formatted-string",
+    "ytd-video-primary-info-renderer #info #date yt-formatted-string"
+  ];
+  
+  for (const selector of dateSelectors) {
+    const dateElement = document.querySelector<HTMLElement>(selector);
+    if (dateElement && dateElement.innerText) {
+      const dateText = dateElement.innerText.trim();
+      // Filter out view count and other non-date text
+      if (dateText && !dateText.includes("views") && !dateText.includes("watching")) {
+        videoDate = dateText;
+        break;
+      }
+    }
+  }
+
   return {
     videoTitle:
       document.querySelector<HTMLElement>("h1.style-scope.ytd-watch-metadata")
@@ -783,6 +807,7 @@ function getVideoMetadata(): VideoMetadata {
       document.querySelector<HTMLElement>(".ytp-time-duration")?.innerText ||
       "N/A",
     videoDescription: videoDescription,
+    videoDate: videoDate,
   };
 }
 

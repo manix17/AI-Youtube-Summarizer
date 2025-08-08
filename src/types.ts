@@ -11,6 +11,7 @@ export interface VideoMetadata {
   channelName: string;
   videoDuration: string;
   videoDescription: string;
+  videoDate: string;
 }
 
 // --- Chrome Extension Message Passing ---

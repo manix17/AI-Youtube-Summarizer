@@ -254,6 +254,7 @@ function handleApiError(
  * @param {string} channelName - The name of the channel.
  * @param {string} videoDescription - The description of the video.
  * @param {string} language - The target language for the summary.
+ * @param {string} videoDate - The upload date of the video (optional, defaults to "N/A").
  * @returns {Promise<SummaryResult>} A promise that resolves with the summary and token usage.
  */
 export async function generateSummary(
@@ -263,7 +264,8 @@ export async function generateSummary(
   videoDuration: string,
   channelName: string,
   videoDescription: string,
-  language: string
+  language: string,
+  videoDate: string = "N/A"
 ): Promise<SummaryResult> {
   const { platform, models, apiKeys, presets, currentPreset } = profile;
   const apiKey = apiKeys[platform];
@@ -283,13 +285,26 @@ export async function generateSummary(
   }
   const { system_prompt: systemPrompt, user_prompt: userPrompt } = preset;
 
+  // Generate current timestamp
+  const currentTimestamp = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short'
+  });
+
   let finalUserPrompt = userPrompt
     .replace("{VIDEO_TRANSCRIPT}", transcript)
     .replace("{VIDEO_TITLE}", videoTitle)
     .replace("{VIDEO_DURATION}", videoDuration)
     .replace("{CHANNEL_NAME}", channelName)
     .replace("{VIDEO_DESCRIPTION}", videoDescription)
-    .replace("{TARGET_LANGUAGE}", language);
+    .replace("{TARGET_LANGUAGE}", language)
+    .replace("{CURRENT_TIMESTAMP}", currentTimestamp)
+    .replace("{VIDEO_DATE}", videoDate || "N/A");
 
   const apiConfig = getApiConfig(platform, model);
   let apiUrl = apiConfig.url;

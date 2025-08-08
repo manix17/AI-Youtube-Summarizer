@@ -185,7 +185,8 @@ async function handleSummarize(
       request.payload.videoDuration,
       request.payload.channelName,
       request.payload.videoDescription,
-      request.payload.language
+      request.payload.language,
+      request.payload.videoDate
     );
 
     // 5. Track token usage for this summarization
