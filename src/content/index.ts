@@ -22,7 +22,7 @@ import type {
 function injectSummarizeUI(): void {
   const targetElement = document.querySelector<HTMLElement>("#below");
 
-  if (targetElement && !document.getElementById("summarize-ui-container")) {
+  if (targetElement && !document.getElementById("summarize-ui-container") && !document.getElementById("summary-wrapper") && !document.getElementById("summary-button-container")) {
     const uiContainer = document.createElement("div");
     uiContainer.id = "summarize-ui-container";
     uiContainer.classList.add("summarize-ui-container");
@@ -90,6 +90,7 @@ function injectSummarizeUI(): void {
     summaryContainer.appendChild(summaryContent);
 
     const buttonContainer = document.createElement("div");
+    buttonContainer.id = "summary-button-container";
     buttonContainer.classList.add("summary-button-container");
     buttonContainer.appendChild(fullscreenButton);
     buttonContainer.appendChild(downloadButton);
@@ -98,6 +99,7 @@ function injectSummarizeUI(): void {
 
     // Create a wrapper to hold both summary container and button container
     const summaryWrapper = document.createElement("div");
+    summaryWrapper.id = "summary-wrapper";
     summaryWrapper.classList.add("summary-wrapper");
     summaryWrapper.appendChild(summaryContainer);
     summaryWrapper.appendChild(buttonContainer);
@@ -993,9 +995,14 @@ function resetAndInjectUI() {
     if (uiContainer) {
       uiContainer.remove();
     }
-    const summaryContainer = document.getElementById("summary-container");
-    if (summaryContainer) {
-      summaryContainer.remove();
+    const summaryWrapper = document.getElementById("summary-wrapper");
+    if (summaryWrapper) {
+      summaryWrapper.remove();
+    }
+    // Also remove any orphaned button container
+    const buttonContainer = document.getElementById("summary-button-container");
+    if (buttonContainer) {
+      buttonContainer.remove();
     }
 
     // Inject fresh UI.
