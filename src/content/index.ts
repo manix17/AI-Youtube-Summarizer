@@ -51,13 +51,12 @@ function injectSummarizeUI(): void {
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
-    summaryContainer.classList.add("summary-container");
-    summaryContainer.style.display = "none";
+    summaryContainer.classList.add("summary-container", "hidden");
 
     // ... (rest of the summary container setup is the same)
     const toggleButton = document.createElement("button");
     toggleButton.id = "toggle-summary-btn";
-    toggleButton.setAttribute("data-tooltip", "Hide Summary");
+    toggleButton.setAttribute("data-tooltip", "Show Summary");
     toggleButton.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
     toggleButton.classList.add("toggle-summary-btn");
@@ -179,13 +178,13 @@ function handleToggleSummary(): void {
       summaryContainer.classList.remove("hidden");
       toggleButton.setAttribute("data-tooltip", "Hide Summary");
       toggleButton.innerHTML = 
-        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
     } else {
       // Hide the container
       summaryContainer.classList.add("hidden");
       toggleButton.setAttribute("data-tooltip", "Show Summary");
       toggleButton.innerHTML = 
-        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
     }
   }
 }
@@ -612,14 +611,13 @@ async function handleSummarizeClick(): Promise<void> {
   button.disabled = true;
   
   // Always show the summary container when generating a new summary
-  summaryContainer.style.display = "block";
   summaryContainer.classList.remove("hidden");
   
   // Update the toggle button to reflect the visible state
   if (toggleButton) {
     toggleButton.setAttribute("data-tooltip", "Hide Summary");
     toggleButton.innerHTML = 
-      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor" style="pointer-events: none; display: block; transition: transform 0.2s ease;"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
   }
 
   const metadata = getVideoMetadata();
