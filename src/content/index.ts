@@ -681,6 +681,8 @@ function handleResponse(response: SummarizeResponseMessage): void {
       updateSummaryContent(
         `<div class="markdown-content">${formattedSummary}</div>`
       );
+      // Scroll to summary container once content is ready (with small delay for DOM update)
+      setTimeout(() => scrollToSummary(), 100);
     }
   } else {
     handleError(new Error("Failed to get a valid summary."));
@@ -711,6 +713,20 @@ function updateSummaryContent(html: string): void {
   const summaryContent = document.getElementById("summary-content");
   if (summaryContent) {
     summaryContent.innerHTML = html;
+  }
+}
+
+/**
+ * Scrolls to the summary container smoothly.
+ */
+function scrollToSummary(): void {
+  const summaryContainer = document.getElementById("summary-container");
+  if (summaryContainer) {
+    summaryContainer.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest"
+    });
   }
 }
 
