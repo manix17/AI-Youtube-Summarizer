@@ -479,6 +479,115 @@
   color: #6f42c1;
 }
 
+/* Collapsible Sections (Details/Summary) */
+.markdown-content details {
+  margin: 16px 0;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.markdown-content details:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.markdown-content details[open] {
+  border-color: #4f46e5;
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.1);
+}
+
+.markdown-content summary {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  cursor: pointer;
+  font-weight: 600;
+  color: #2d3748;
+  border: none;
+  outline: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.markdown-content summary:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  color: #1a202c;
+}
+
+.markdown-content details[open] summary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content details[open] summary:hover {
+  background: linear-gradient(135deg, #3730a3 0%, #6b21a8 100%);
+}
+
+/* Custom arrow indicator */
+.markdown-content summary::before {
+  content: '▶';
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  color: #6b7280;
+}
+
+.markdown-content details[open] summary::before {
+  transform: rotate(90deg);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.markdown-content summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-content summary::marker {
+  display: none;
+}
+
+/* Content inside collapsible section */
+.markdown-content details > *:not(summary) {
+  padding: 16px;
+  margin: 0;
+}
+
+.markdown-content details > p:first-of-type {
+  margin-top: 0;
+}
+
+.markdown-content details > p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content details > ul,
+.markdown-content details > ol {
+  margin-bottom: 0;
+}
+
+/* Nested collapsible sections */
+.markdown-content details details {
+  margin: 12px 0;
+  border-color: #d1d5db;
+  background: #ffffff;
+}
+
+.markdown-content details details summary {
+  padding: 10px 14px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+}
+
+.markdown-content details details summary:hover {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
 /* Dark Mode Styles */
 #summary-container.dark {
   background-color: #212121;
@@ -691,5 +800,65 @@
 .summarize-ui-container.dark .summarize-btn:disabled {
   background-color: #383838;
   color: #717171;
+}
+
+/* Dark mode collapsible sections */
+#summary-container.dark .markdown-content details {
+  border-color: #4b5563;
+  background: #374151;
+}
+
+#summary-container.dark .markdown-content details:hover {
+  border-color: #6b7280;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#summary-container.dark .markdown-content details[open] {
+  border-color: #60a5fa;
+  box-shadow: 0 4px 8px rgba(96, 165, 250, 0.15);
+}
+
+#summary-container.dark .markdown-content summary {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #e5e7eb;
+}
+
+#summary-container.dark .markdown-content summary:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  color: #f3f4f6;
+}
+
+#summary-container.dark .markdown-content details[open] summary {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  color: white;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+#summary-container.dark .markdown-content details[open] summary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+#summary-container.dark .markdown-content summary::before {
+  color: #9ca3af;
+}
+
+#summary-container.dark .markdown-content details[open] summary::before {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode nested collapsible sections */
+#summary-container.dark .markdown-content details details {
+  border-color: #6b7280;
+  background: #1f2937;
+}
+
+#summary-container.dark .markdown-content details details summary {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #d1d5db;
+}
+
+#summary-container.dark .markdown-content details details summary:hover {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #e5e7eb;
 }
 

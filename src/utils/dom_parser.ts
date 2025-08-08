@@ -234,6 +234,13 @@ export function convertHTMLToText(element: HTMLElement): string {
           } else {
             return `[${processChildren(node).trim()}](${linkElement.href})`;
           }
+        case 'details':
+          const isOpen = (el as HTMLDetailsElement).hasAttribute('open');
+          const detailsContent = processChildren(node).trim();
+          return `${detailsContent}${isOpen ? '\n\n' : '\n\n'}`;
+        case 'summary':
+          const summaryContent = processChildren(node).trim();
+          return `**${summaryContent}**\n\n`;
         default:
           return processChildren(node);
       }
@@ -299,16 +306,16 @@ export function convertToHTML(text: string): string {
   // Make external links open in new tabs
   const processedHtml = addTargetBlankToLinks(timestampHtml);
   
-  // Sanitize the HTML with DOMPurify, allowing our custom timestamp links
+  // Sanitize the HTML with DOMPurify, allowing our custom timestamp links and collapsible sections
   const cleanHtml = DOMPurify.sanitize(processedHtml, {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'p', 'br', 'strong', 'em', 'code', 'pre',
       'ul', 'ol', 'li',
-      'a', 'span'
+      'a', 'span', 'details', 'summary'
     ],
     ALLOWED_ATTR: [
-      'href', 'data-seconds', 'class', 'target', 'rel',
+      'href', 'data-seconds', 'class', 'target', 'rel', 'open',
       'data-*' // Allow all data attributes for timestamp functionality
     ],
     ALLOW_DATA_ATTR: true

@@ -679,7 +679,7 @@ function handleResponse(response: SummarizeResponseMessage): void {
     } else {
       const formattedSummary = convertToHTML(response.payload.summary);
       updateSummaryContent(
-        `<h3>Summary</h3><div class="markdown-content">${formattedSummary}</div>`
+        `<div class="markdown-content">${formattedSummary}</div>`
       );
     }
   } else {
