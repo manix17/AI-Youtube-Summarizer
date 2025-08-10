@@ -109,11 +109,11 @@ describe("Options UI", () => {
 
     const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
     const testKeyBtn = document.getElementById('test-key-btn') as HTMLButtonElement;
-    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
+    const modelSearch = document.getElementById('model-search') as HTMLInputElement;
 
     expect(apiKeyInput).not.toBeNull();
     expect(testKeyBtn).not.toBeNull();
-    expect(modelSelect).not.toBeNull();
+    expect(modelSearch).not.toBeNull();
 
     // Test setting API key value
     apiKeyInput.value = 'test-key';
