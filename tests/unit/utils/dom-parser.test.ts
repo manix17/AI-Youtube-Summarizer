@@ -162,6 +162,50 @@ describe("DOM Parser Utils", () => {
       expect(result).toContain('>1:25:30</a>');
     });
 
+    it("should handle standalone timestamps without brackets or parentheses", () => {
+      const text = "At 01:54 something important happens";
+      const result = convertToHTML(text);
+      expect(result).toContain('class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color"');
+      expect(result).toContain('data-seconds="114"');
+      expect(result).toContain('>01:54</a>');
+    });
+
+    it("should handle multiple standalone timestamps", () => {
+      const text = "Discussion from 01:54 to 02:30 covers key points";
+      const result = convertToHTML(text);
+      expect(result).toContain('data-seconds="114"');
+      expect(result).toContain('data-seconds="150"');
+      expect(result).toContain('>01:54</a>');
+      expect(result).toContain('>02:30</a>');
+    });
+
+    it("should handle mixed bracket and standalone timestamp formats", () => {
+      const text = "Key points [01:54] and standalone 02:30 are important";
+      const result = convertToHTML(text);
+      expect(result).toContain('data-seconds="114"');
+      expect(result).toContain('data-seconds="150"');
+      expect(result).toContain('>01:54</a>');
+      expect(result).toContain('>02:30</a>');
+      // Should have exactly 2 timestamp links
+      const linkMatches = result.match(/<a[^>]*class="timestamp-link[^>]*>/g);
+      expect(linkMatches).toHaveLength(2);
+    });
+
+    it("should not convert version numbers or other colon-separated numbers", () => {
+      const text = "Version 2.4.1 running on port 3000";
+      const result = convertToHTML(text);
+      expect(result).not.toContain('timestamp-link');
+      expect(result).not.toContain('data-seconds');
+    });
+
+    it("should handle standalone hours format timestamps", () => {
+      const text = "Long content at 1:23:45 discusses advanced topics";
+      const result = convertToHTML(text);
+      // 1:23:45 = 1*3600 + 23*60 + 45 = 5025 seconds
+      expect(result).toContain('data-seconds="5025"');
+      expect(result).toContain('>1:23:45</a>');
+    });
+
     it("should convert nested HTML lists back to properly formatted markdown", () => {
       const div = document.createElement("div");
       div.innerHTML = `

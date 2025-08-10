@@ -21,16 +21,14 @@ function preprocessText(text: string): string {
 }
 
 /**
- * Converts timestamp-like strings (e.g., [01:23], (1:23, 2:45), [1:23-2:45]) into clickable links.
+ * Converts timestamp-like strings (e.g., [01:23], (1:23, 2:45), [1:23-2:45], 01:54) into clickable links.
  * Creates separate clickable links for each individual timestamp and removes brackets.
  * @param {string} text - The text to process.
  * @returns {string} The text with HTML links for timestamps.
  */
 function linkifyTimestamps(text: string): string {
-  // First, find patterns with brackets/parentheses containing timestamps
-  const containerRegex = /[[\(]([^[\])]*\d{1,2}:\d{2}(?::\d{2})?[^[\]()]*)[)\]]/g;
-  
-  return text.replace(containerRegex, (match) => {
+  // First, handle patterns with brackets/parentheses containing timestamps
+  let processedText = text.replace(/[[\(]([^[\])]*\d{1,2}:\d{2}(?::\d{2})?[^[\]()]*)[)\]]/g, (match) => {
     // Extract the content inside brackets/parentheses
     const content = match.slice(1, -1); // Remove first and last character (brackets/parentheses)
     
@@ -63,6 +61,27 @@ function linkifyTimestamps(text: string): string {
     
     return timestampLinks.join(separator);
   });
+
+  // Then, handle standalone timestamps (not in brackets/parentheses)
+  // Use word boundaries to avoid matching timestamps that are part of other patterns
+  processedText = processedText.replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, (match, timestamp) => {
+    // Skip if this timestamp is already inside a link (from previous processing)
+    if (processedText.indexOf(`>${timestamp}</a>`) !== -1) {
+      return match;
+    }
+    
+    const parts = timestamp.split(":").map(Number);
+    let seconds = 0;
+    if (parts.length === 3) {
+      seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else {
+      seconds = parts[0] * 60 + parts[1];
+    }
+    
+    return `<a href="javascript:void(0)" data-seconds="${seconds}" class="timestamp-link yt-core-attributed-string__link yt-core-attributed-string__link--call-to-action-color">${timestamp}</a>`;
+  });
+
+  return processedText;
 }
 
 /**
