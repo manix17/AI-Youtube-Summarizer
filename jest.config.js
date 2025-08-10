@@ -4,7 +4,11 @@ module.exports = {
   testEnvironment: "node",
   transform: {
     "^.+.tsx?$": "ts-jest",
+    "^.+.jsx?$": "ts-jest",
   },
+  transformIgnorePatterns: [
+    "node_modules/(?!(marked)/)"
+  ],
   moduleNameMapper: {
     "^@utils/(.*)$": "<rootDir>/src/utils/$1",
     "^@background/(.*)$": "<rootDir>/src/background/$1",

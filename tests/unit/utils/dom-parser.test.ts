@@ -17,7 +17,7 @@ describe("DOM Parser Utils", () => {
 
     it("should convert markdown-like headings and paragraphs to HTML", () => {
       const text = `### My Heading\n\nThis is a paragraph.`;
-      const expectedHtml = `<h3>My Heading</h3>\n\n<p>This is a paragraph.</p>`;
+      const expectedHtml = `<h3>My Heading</h3>\n<p>This is a paragraph.</p>`;
       expect(convertToHTML(text)).toBe(expectedHtml);
     });
 
