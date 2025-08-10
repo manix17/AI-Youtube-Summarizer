@@ -161,6 +161,37 @@ describe("DOM Parser Utils", () => {
       expect(result).toContain('>1:23:45</a>');
       expect(result).toContain('>1:25:30</a>');
     });
+
+    it("should convert nested HTML lists back to properly formatted markdown", () => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <ul>
+          <li><strong>Potential challenges or obstacles mentioned</strong>:
+            <ul>
+              <li><strong>"Vibe coding"</strong>: Unstructured AI use leading to hallucinations and context loss (addressed by BMAD and Git MCP).</li>
+              <li><strong>UI design quality</strong>: AI agents' current limitations in UI design (addressed by Mobbin sponsor and Awesome UI Component Library).</li>
+            </ul>
+          </li>
+          <li><strong>Mitigation strategies discussed</strong>:
+            <ul>
+              <li>Implementing the <strong>BMAD method</strong> for structured, agile AI development.</li>
+              <li>Using <strong>Git MCP</strong> to provide AI agents with comprehensive context from GitHub repositories.</li>
+            </ul>
+          </li>
+        </ul>
+      `;
+      document.body.appendChild(div);
+      
+      const result = convertHTMLToText(div);
+      
+      // Should have proper line breaks and indentation for nested items
+      expect(result).toContain('- **Potential challenges or obstacles mentioned**:\n  - **"Vibe coding"**:');
+      expect(result).toContain('- **Mitigation strategies discussed**:\n  - Implementing the **BMAD method**');
+      
+      // Should NOT have the nested items inline without proper line breaks
+      expect(result).not.toContain(':**- **"Vibe coding"');
+      expect(result).not.toContain(':**- Implementing');
+    });
   });
 
   describe("convertHTMLToText", () => {

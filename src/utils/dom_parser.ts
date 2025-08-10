@@ -207,15 +207,82 @@ export function convertHTMLToText(element: HTMLElement): string {
           return pContent ? `${pContent}\n\n` : '';
         case 'ul':
         case 'ol':
-          const listContent = processChildren(node).trim();
-          return listContent ? `${listContent}\n\n` : '';
+          // Process only non-whitespace children to avoid HTML formatting spaces
+          let listResult = '';
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const child = node.childNodes[i];
+            if (child.nodeType === Node.ELEMENT_NODE) {
+              listResult += processNode(child);
+            } else if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
+              // Only include text nodes that have non-whitespace content
+              listResult += processNode(child);
+            }
+          }
+          return listResult;
         case 'li':
           const parentTag = el.parentElement?.tagName.toLowerCase();
           const prefix = parentTag === 'ol' ? '1. ' : '- ';
           const depth = getListDepth(el);
           const indent = "  ".repeat(depth); // Use 2 spaces for better readability
-          const liContent = processChildren(node).trim();
-          return liContent ? `${indent}${prefix}${liContent}\n` : '';
+          
+          // Check if this list item contains nested lists
+          let hasNestedList = false;
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const child = node.childNodes[i];
+            if (child.nodeType === Node.ELEMENT_NODE) {
+              const childTag = (child as Element).tagName.toLowerCase();
+              if (childTag === 'ul' || childTag === 'ol') {
+                hasNestedList = true;
+                break;
+              }
+            }
+          }
+          
+          if (hasNestedList) {
+            // For list items with nested lists, handle them specially
+            let result = '';
+            let directContent = '';
+            
+            // First, extract direct content (not nested lists)
+            for (let i = 0; i < node.childNodes.length; i++) {
+              const child = node.childNodes[i];
+              if (child.nodeType === Node.ELEMENT_NODE) {
+                const childEl = child as Element;
+                const childTag = childEl.tagName.toLowerCase();
+                if (childTag !== 'ul' && childTag !== 'ol') {
+                  directContent += processNode(child);
+                }
+              } else if (child.nodeType === Node.TEXT_NODE) {
+                directContent += child.textContent || '';
+              }
+            }
+            
+            // Add the direct content with proper indentation
+            if (directContent.trim()) {
+              result += `${indent}${prefix}${directContent.trim()}\n`;
+            }
+            
+            // Now add nested lists
+            for (let i = 0; i < node.childNodes.length; i++) {
+              const child = node.childNodes[i];
+              if (child.nodeType === Node.ELEMENT_NODE) {
+                const childEl = child as Element;
+                const childTag = childEl.tagName.toLowerCase();
+                if (childTag === 'ul' || childTag === 'ol') {
+                  const nestedContent = processNode(child);
+                  if (nestedContent.trim()) {
+                    result += nestedContent;
+                  }
+                }
+              }
+            }
+            
+            return result;
+          } else {
+            // Normal list item without nested lists
+            const liContent = processChildren(node).trim();
+            return liContent ? `${indent}${prefix}${liContent}\n` : '';
+          }
         case 'strong':
           return `**${processChildren(node).trim()}**`;
         case 'code':
@@ -274,9 +341,8 @@ export function convertHTMLToText(element: HTMLElement): string {
   
   let result = processNode(element);
   
-  // Clean up excessive newlines while preserving paragraph structure
-  result = result.replace(/\n{4,}/g, '\n\n\n'); // Max 3 newlines
-  result = result.replace(/\n{3,}/g, '\n\n'); // Convert 3+ newlines to 2
+  // Clean up excessive newlines while preserving paragraph structure and indentation
+  result = result.replace(/\n{3,}/g, '\n\n'); // Convert 3+ newlines to 2, but preserve indentation
   result = result.trim();
   
   return result;
