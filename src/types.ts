@@ -93,7 +93,12 @@ export interface StoredProfile {
 export interface PlatformConfig {
   name: string;
   className: string;
-  models: { value: string; label: string }[];
+  models: {
+    value: string;
+    label: string;
+    temperature?: number;
+    apiName?: string;
+  }[];
 }
 
 export interface PromptPreset {

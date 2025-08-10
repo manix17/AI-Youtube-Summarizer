@@ -15,7 +15,10 @@ import type {
   SummaryChunk,
   TokenUsageResult,
 } from "../types";
-import platformConfigs from "../assets/platform_configs.json";
+import { PlatformConfigs } from "../types";
+import platformConfigsData from "../assets/platform_configs.json";
+
+const platformConfigs: PlatformConfigs = platformConfigsData;
 
 /**
  * Maps simplified Anthropic model names to their full API model names.
@@ -315,12 +318,19 @@ export async function generateSummary(
     apiUrl += `?key=${apiKey}`;
   }
 
+  // Find the model configuration to check for a model-specific temperature
+  const platformConfig = platformConfigs[platform as keyof typeof platformConfigs];
+  const modelConfig = platformConfig.models.find(m => m.value === model);
+
+  // A model-specific temperature overrides the preset temperature
+  const temperature = modelConfig?.temperature ?? preset.temperature;
+
   const payload = buildRequestPayload(
     platform,
     model,
     systemPrompt,
     finalUserPrompt,
-    preset.temperature
+    temperature
   );
   const headers = buildRequestHeaders(platform, apiKey);
 
@@ -557,12 +567,19 @@ export async function generateSummaryStreaming(
     apiUrl += `?key=${apiKey}&alt=sse`;
   }
 
+  // Find the model configuration to check for a model-specific temperature
+  const platformConfig = platformConfigs[platform as keyof typeof platformConfigs];
+  const modelConfig = platformConfig.models.find(m => m.value === model);
+
+  // A model-specific temperature overrides the preset temperature
+  const temperature = modelConfig?.temperature ?? preset.temperature;
+
   const payload = buildStreamingRequestPayload(
     platform,
     model,
     systemPrompt,
     finalUserPrompt,
-    preset.temperature
+    temperature
   );
   const headers = buildRequestHeaders(platform, apiKey);
 

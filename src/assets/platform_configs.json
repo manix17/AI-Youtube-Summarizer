@@ -3,9 +3,9 @@
     "name": "🧠 OpenAI",
     "className": "openai",
     "models": [
-      { "value": "gpt-5", "label": "GPT-5" },
-      { "value": "gpt-5-mini", "label": "GPT-5 Mini" },
-      { "value": "gpt-5-nano", "label": "GPT-5 Nano" },
+      { "value": "gpt-5", "label": "GPT-5", "temperature": 1 },
+      { "value": "gpt-5-mini", "label": "GPT-5 Mini", "temperature": 1 },
+      { "value": "gpt-5-nano", "label": "GPT-5 Nano", "temperature": 1 },
       { "value": "gpt-3.5-turbo", "label": "GPT-3.5 Turbo" }
     ]
   },
