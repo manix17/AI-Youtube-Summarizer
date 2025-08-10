@@ -320,7 +320,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
 
     it("should use correct model in requests", async () => {
       const profile = createTestProfile("anthropic");
-      profile.models.anthropic = "claude-3-opus";
+      profile.models.anthropic = "claude-3-haiku";
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -330,7 +330,7 @@ describe("API Request Formatting Integration (CORE-006)", () => {
       await generateSummary(profile, "[0:00] Test", "Test", "1:00", "Test", "Test description", "English");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(requestBody.model).toBe("claude-3-opus-20240229");
+      expect(requestBody.model).toBe("claude-3-haiku-20240307");
     });
   });
 
