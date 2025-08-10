@@ -44,11 +44,21 @@ export type SummarizeRequest = Message<SummarizePayload> & {
   type: "summarize";
 };
 
+export type SummarizeStreamingRequest = Message<SummarizePayload> & {
+  type: "summarizeStreaming";
+};
+
 // Union of all possible requests from client to background
-export type BackgroundRequest = TestApiKeyRequest | SummarizeRequest;
+export type BackgroundRequest = TestApiKeyRequest | SummarizeRequest | SummarizeStreamingRequest;
 
 // Responses
 export type SummarizeResponseMessage = Message<{ summary?: string }>;
+export type SummarizeStreamingChunkMessage = Message<SummaryChunk> & {
+  type: "streamingChunk";
+};
+export type SummarizeStreamingCompleteMessage = Message<{ summary: string; tokenUsage?: TokenUsageResult }> & {
+  type: "streamingComplete";
+};
 export type PageResponseMessage = Message<PlayerResponse>;
 
 // --- Storage & Profiles ---
@@ -129,6 +139,7 @@ export interface OpenAIRequest {
   model: string;
   messages: OpenAIMessage[];
   temperature?: number;
+  stream?: boolean;
 }
 export interface OpenAIResponse {
   choices: { message: { content: string } }[];
@@ -154,6 +165,7 @@ export interface AnthropicRequest {
   messages: AnthropicMessage[];
   max_tokens: number;
   temperature?: number;
+  stream?: boolean;
 }
 export interface AnthropicResponse {
   content: { text: string }[];
@@ -204,6 +216,14 @@ export interface TokenUsageResult {
 export interface SummaryResult {
   summary: string;
   tokenUsage?: TokenUsageResult;
+}
+
+// Streaming summary chunk
+export interface SummaryChunk {
+  content: string;
+  isComplete: boolean;
+  tokenUsage?: TokenUsageResult;
+  error?: string;
 }
 
 // Union types for requests and responses

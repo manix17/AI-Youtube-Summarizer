@@ -654,7 +654,8 @@ async function handleSummarizeClick(): Promise<void> {
       },
     };
 
-    chrome.runtime.sendMessage(message, handleResponse);
+    // Use streaming API for real-time display
+    handleSummarizeStreaming(message);
   } catch (error) {
     handleError(error as Error);
   }
@@ -668,7 +669,6 @@ function handleResponse(response: SummarizeResponseMessage): void {
   if (loadingInterval) clearInterval(loadingInterval);
   const button = document.getElementById("summarize-btn") as HTMLButtonElement;
 
-  console.log("handleResponse: ", response, chrome.runtime.lastError);
   if (response.error) {
     handleError(new Error(response.error));
   } else if (chrome.runtime.lastError) {
@@ -730,6 +730,111 @@ function scrollToSummary(): void {
   }
 }
 
+/**
+ * Handles streaming summarization requests and responses.
+ * @param {any} message - The message to send for streaming summarization.
+ */
+function handleSummarizeStreaming(message: any): void {
+  // Don't clear the loading interval here - let the humorous messages continue
+  // until we receive the first chunk
+  
+  // Add CSS for streaming content transitions if not already present
+  if (!document.getElementById('streaming-css')) {
+    const style = document.createElement('style');
+    style.id = 'streaming-css';
+    style.textContent = `
+      .streaming-content {
+        animation: streamingFadeIn 0.3s ease-in-out;
+      }
+      @keyframes streamingFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Send streaming request
+  const streamingMessage = {
+    ...message,
+    type: "summarizeStreaming"
+  };
+  
+  chrome.runtime.sendMessage(streamingMessage);
+}
+
+/**
+ * Handles streaming chunk messages from the background script.
+ * @param {any} chunk - The streaming chunk data.
+ */
+function handleStreamingChunk(chunk: any): void {
+  // Clear the humorous loading messages when first chunk arrives
+  if (loadingInterval) {
+    clearInterval(loadingInterval);
+    loadingInterval = null;
+  }
+  
+  const summaryContent = document.getElementById("summary-content");
+  if (!summaryContent) {
+    console.error("Summary content element not found");
+    return;
+  }
+  
+  // Initialize streaming content container if not exists
+  let streamingContent = summaryContent.querySelector('.streaming-content');
+  if (!streamingContent) {
+    summaryContent.innerHTML = '<div class="streaming-content markdown-content"></div>';
+    streamingContent = summaryContent.querySelector('.streaming-content');
+  }
+  
+  if (chunk.error) {
+    console.error("Streaming chunk error:", chunk.error);
+    // Handle error
+    handleError(new Error(chunk.error));
+    return;
+  }
+  
+  if (chunk.content) {
+    // Append new content - convert markdown to HTML for each chunk
+    const newContent = chunk.content;
+    
+    // For streaming, we need to accumulate the content and re-parse it
+    // to handle markdown that spans multiple chunks
+    const accumulatedText = (streamingContent?.getAttribute('data-accumulated') || '') + newContent;
+    streamingContent?.setAttribute('data-accumulated', accumulatedText);
+    
+    
+    // Convert accumulated markdown to HTML
+    const htmlContent = convertToHTML(accumulatedText);
+    
+    if (streamingContent) {
+      streamingContent.innerHTML = htmlContent;
+      
+      // Make sure the summary container is visible
+      const summaryContainer = document.getElementById("summary-container");
+      if (summaryContainer) {
+        summaryContainer.classList.remove("hidden");
+      }
+    }
+  }
+  
+  if (chunk.isComplete) {
+    // Streaming is complete
+    const button = document.getElementById("summarize-btn") as HTMLButtonElement;
+    button.innerText = "✨ Summarize Video";
+    button.disabled = false;
+    
+    // Scroll to summary container once complete
+    setTimeout(() => scrollToSummary(), 100);
+    
+    // Clean up streaming indicator CSS
+    const streamingCSS = document.getElementById('streaming-css');
+    if (streamingCSS) {
+      streamingCSS.remove();
+    }
+  }
+}
+
 // --- 3. Transcript and Metadata Extraction ---
 
 /**
@@ -739,15 +844,10 @@ function scrollToSummary(): void {
 async function getTranscript(): Promise<string> {
   try {
     const apiTranscript = await getTranscriptFromApi();
-    console.log("Transcript from API Length:", apiTranscript.length);
     if (apiTranscript && apiTranscript.trim() !== "") {
       return apiTranscript;
     }
   } catch (error) {
-    console.log(
-      "API transcript method failed, falling back to DOM scraping:",
-      (error as Error).message
-    );
   }
   // If API method fails or returns empty, try the DOM fallback
   return getTranscriptFromDOM();
@@ -1027,11 +1127,29 @@ observer.observe(document.body, {
 // Initial run on page load
 resetAndInjectUI();
 
-// Listen for messages from the popup
+// Listen for messages from the popup and background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "GET_VIDEO_METADATA") {
     const metadata = getVideoMetadata();
     sendResponse({ payload: metadata });
+  } else if (request.type === "streamingChunk") {
+    // Handle streaming chunk from background script
+    handleStreamingChunk(request.payload);
+  } else if (request.type === "streamingComplete") {
+    // Handle streaming completion - this is sent by background script after streaming is done
+    
+    const button = document.getElementById("summarize-btn") as HTMLButtonElement;
+    button.innerText = "✨ Summarize Video";
+    button.disabled = false;
+    
+    // Clean up streaming indicator CSS
+    const streamingCSS = document.getElementById('streaming-css');
+    if (streamingCSS) {
+      streamingCSS.remove();
+    }
+    
+    // Scroll to summary container once complete
+    setTimeout(() => scrollToSummary(), 100);
   }
 });
 

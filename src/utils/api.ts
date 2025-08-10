@@ -12,6 +12,7 @@ import type {
   AnthropicResponse,
   GeminiResponse,
   SummaryResult,
+  SummaryChunk,
   TokenUsageResult,
 } from "../types";
 import platformConfigs from "../assets/platform_configs.json";
@@ -347,5 +348,286 @@ export async function generateSummary(
       throw new Error(`Could not generate summary. ${error.message}`);
     }
     throw new Error("An unknown error occurred during summarization.");
+  }
+}
+
+/**
+ * Builds streaming request payload for supported platforms
+ * @param {Platform} platform - The AI platform.
+ * @param {string} model - The model name.
+ * @param {string} systemPrompt - The system prompt.
+ * @param {string} userPrompt - The user prompt.
+ * @param {number} temperature - The response temperature.
+ * @returns {ApiRequestPayload} The formatted request payload with streaming enabled.
+ */
+function buildStreamingRequestPayload(
+  platform: Platform,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number
+): ApiRequestPayload {
+  const basePayload = buildRequestPayload(platform, model, systemPrompt, userPrompt, temperature);
+  
+  switch (platform) {
+    case "openai":
+    case "openrouter":
+      return {
+        ...basePayload,
+        stream: true
+      };
+    case "anthropic":
+      return {
+        ...basePayload,
+        stream: true
+      };
+    case "gemini":
+      // Gemini streaming uses alt=sse URL parameter, payload stays the same
+      return basePayload;
+    default:
+      return basePayload;
+  }
+}
+
+/**
+ * Parses a streaming chunk based on the platform
+ * @param {Platform} platform - The AI platform.
+ * @param {string} chunk - Raw chunk data.
+ * @returns {SummaryChunk | null} Parsed chunk or null if not valid.
+ */
+function parseStreamingChunk(platform: Platform, chunk: string): SummaryChunk | null {
+  try {
+    // Remove "data: " prefix if present
+    const cleanChunk = chunk.replace(/^data:\s*/, '').trim();
+    
+    if (cleanChunk === '[DONE]' || cleanChunk === '') {
+      return { content: '', isComplete: true };
+    }
+
+    const data = JSON.parse(cleanChunk);
+
+    switch (platform) {
+      case "openai":
+      case "openrouter":
+        if (data.choices && data.choices[0] && data.choices[0].delta) {
+          const deltaContent = data.choices[0].delta.content || '';
+          const isComplete = data.choices[0].finish_reason !== null;
+          return {
+            content: deltaContent,
+            isComplete,
+            tokenUsage: data.usage ? {
+              inputTokens: data.usage.prompt_tokens || 0,
+              outputTokens: data.usage.completion_tokens || 0
+            } : undefined
+          };
+        }
+        break;
+        
+      case "anthropic":
+        if (data.type === 'content_block_delta' && data.delta && data.delta.text) {
+          return {
+            content: data.delta.text,
+            isComplete: false
+          };
+        } else if (data.type === 'message_stop') {
+          return {
+            content: '',
+            isComplete: true,
+            tokenUsage: data.usage ? {
+              inputTokens: data.usage.input_tokens || 0,
+              outputTokens: data.usage.output_tokens || 0
+            } : undefined
+          };
+        }
+        break;
+        
+      case "gemini":
+        // Gemini streaming format with streamGenerateContent and alt=sse
+        if (data.candidates && data.candidates.length > 0) {
+          const candidate = data.candidates[0];
+          if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+            const deltaContent = candidate.content.parts[0].text || '';
+            // With streamGenerateContent, chunks should be incremental until finishReason appears
+            const isComplete = candidate.finishReason !== undefined && candidate.finishReason !== null;
+            return {
+              content: deltaContent,
+              isComplete,
+              tokenUsage: data.usageMetadata ? {
+                inputTokens: data.usageMetadata.promptTokenCount || 0,
+                outputTokens: data.usageMetadata.candidatesTokenCount || 0
+              } : undefined
+            };
+          }
+        }
+        
+        // Check for completion indicators
+        if (data.promptFeedback && data.promptFeedback.blockReason) {
+          return {
+            content: '',
+            isComplete: true,
+            error: `Content blocked: ${data.promptFeedback.blockReason}`
+          };
+        }
+        
+        break;
+        
+      default:
+        return null;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing streaming chunk:', error, 'Chunk:', chunk);
+    return null;
+  }
+}
+
+/**
+ * Streaming version of generateSummary that yields chunks as they arrive
+ * @param {Profile} profile - The user's current profile settings.
+ * @param {string} transcript - The video transcript.
+ * @param {string} videoTitle - The title of the video.
+ * @param {string} videoDuration - The duration of the video.
+ * @param {string} channelName - The name of the channel.
+ * @param {string} videoDescription - The description of the video.
+ * @param {string} language - The target language for the summary.
+ * @param {string} videoDate - The upload date of the video (optional, defaults to "N/A").
+ * @param {function} onChunk - Callback function called for each chunk of data.
+ * @returns {Promise<SummaryResult>} A promise that resolves with the complete summary and token usage.
+ */
+export async function generateSummaryStreaming(
+  profile: Profile,
+  transcript: string,
+  videoTitle: string,
+  videoDuration: string,
+  channelName: string,
+  videoDescription: string,
+  language: string,
+  videoDate: string = "N/A",
+  onChunk: (chunk: SummaryChunk) => void
+): Promise<SummaryResult> {
+  const { platform, models, apiKeys, presets, currentPreset } = profile;
+  const apiKey = apiKeys[platform];
+  const model = models[platform];
+  
+  if (!apiKey) {
+    throw new Error(`API key for ${platform} provider is missing.`);
+  }
+  
+  if (!model) {
+    throw new Error(`Model for ${platform} provider is missing.`);
+  }
+  
+  const preset = presets[currentPreset];
+  if (!preset) {
+    throw new Error(`Selected prompt preset "${currentPreset}" not found.`);
+  }
+  const { system_prompt: systemPrompt, user_prompt: userPrompt } = preset;
+
+  // Generate current timestamp
+  const currentTimestamp = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short'
+  });
+
+  let finalUserPrompt = userPrompt
+    .replace("{VIDEO_TRANSCRIPT}", transcript)
+    .replace("{VIDEO_TITLE}", videoTitle)
+    .replace("{VIDEO_DURATION}", videoDuration)
+    .replace("{CHANNEL_NAME}", channelName)
+    .replace("{VIDEO_DESCRIPTION}", videoDescription)
+    .replace("{TARGET_LANGUAGE}", language)
+    .replace("{CURRENT_TIMESTAMP}", currentTimestamp)
+    .replace("{VIDEO_DATE}", videoDate || "N/A");
+
+  const apiConfig = getApiConfig(platform, model);
+  let apiUrl = apiConfig.url;
+  if (platform === "gemini") {
+    // Gemini streaming uses streamGenerateContent endpoint with alt=sse parameter
+    apiUrl = apiUrl.replace(':generateContent', ':streamGenerateContent');
+    apiUrl += `?key=${apiKey}&alt=sse`;
+  }
+
+  const payload = buildStreamingRequestPayload(
+    platform,
+    model,
+    systemPrompt,
+    finalUserPrompt,
+    preset.temperature
+  );
+  const headers = buildRequestHeaders(platform, apiKey);
+
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessage = handleApiError(platform, errorData, response.status);
+      throw new Error(errorMessage);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body received for streaming");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullSummary = '';
+    let tokenUsage: TokenUsageResult | undefined;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        const lines = chunkText.split('\n');
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+          
+          const parsedChunk = parseStreamingChunk(platform, line);
+          if (parsedChunk) {
+            if (parsedChunk.content) {
+              fullSummary += parsedChunk.content;
+            }
+            if (parsedChunk.tokenUsage) {
+              tokenUsage = parsedChunk.tokenUsage;
+            }
+            
+            // Call the chunk callback
+            onChunk({
+              content: parsedChunk.content,
+              isComplete: parsedChunk.isComplete,
+              tokenUsage: parsedChunk.tokenUsage
+            });
+
+            if (parsedChunk.isComplete) {
+              break;
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return { summary: fullSummary, tokenUsage };
+  } catch (error) {
+    console.error("Error during streaming summarization:", error);
+    if (error instanceof Error) {
+      throw new Error(`Could not generate streaming summary. ${error.message}`);
+    }
+    throw new Error("An unknown error occurred during streaming summarization.");
   }
 }
