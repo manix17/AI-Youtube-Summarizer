@@ -266,7 +266,8 @@ export async function generateSummary(
   channelName: string,
   videoDescription: string,
   language: string,
-  videoDate: string = "N/A"
+  videoDate: string = "N/A",
+  question: string = ""
 ): Promise<SummaryResult> {
   const { platform, models, apiKeys, presets, currentPreset } = profile;
   const apiKey = apiKeys[platform];
@@ -305,7 +306,8 @@ export async function generateSummary(
     .replace("{VIDEO_DESCRIPTION}", videoDescription)
     .replace("{TARGET_LANGUAGE}", language)
     .replace("{CURRENT_TIMESTAMP}", currentTimestamp)
-    .replace("{VIDEO_DATE}", videoDate || "N/A");
+    .replace("{VIDEO_DATE}", videoDate || "N/A")
+    .replace("{VIDEO_ASK_A_QUESTION}", question || "");
 
   const apiConfig = getApiConfig(platform, model);
   let apiUrl = apiConfig.url;
@@ -504,7 +506,8 @@ export async function generateSummaryStreaming(
   videoDescription: string,
   language: string,
   videoDate: string = "N/A",
-  onChunk: (chunk: SummaryChunk) => void
+  onChunk: (chunk: SummaryChunk) => void,
+  question: string = ""
 ): Promise<SummaryResult> {
   const { platform, models, apiKeys, presets, currentPreset } = profile;
   const apiKey = apiKeys[platform];
@@ -543,7 +546,8 @@ export async function generateSummaryStreaming(
     .replace("{VIDEO_DESCRIPTION}", videoDescription)
     .replace("{TARGET_LANGUAGE}", language)
     .replace("{CURRENT_TIMESTAMP}", currentTimestamp)
-    .replace("{VIDEO_DATE}", videoDate || "N/A");
+    .replace("{VIDEO_DATE}", videoDate || "N/A")
+    .replace("{VIDEO_ASK_A_QUESTION}", question || "");
 
   const apiConfig = getApiConfig(platform, model);
   let apiUrl = apiConfig.url;

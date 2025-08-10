@@ -513,4 +513,184 @@ describe("Content Script Functions", () => {
       expect(summaryContainer.classList.contains("dark")).toBe(false);
     });
   });
+
+  describe("Question Input Field", () => {
+    // Helper functions that mimic the actual content script implementation
+    function createQuestionInput(): HTMLTextAreaElement {
+      const textarea = document.createElement("textarea");
+      textarea.id = "question-input";
+      textarea.placeholder = "What would you like to ask about this video?";
+      textarea.classList.add("summary-select", "question-textarea");
+      textarea.rows = 3;
+      textarea.style.display = "none";
+      textarea.style.resize = "vertical";
+      textarea.style.minHeight = "80px";
+      textarea.style.maxHeight = "200px";
+      textarea.style.width = "100%";
+      textarea.style.boxSizing = "border-box";
+      textarea.style.fontFamily = "inherit";
+      textarea.style.fontSize = "14px";
+      textarea.style.lineHeight = "1.4";
+      textarea.style.padding = "8px";
+      textarea.style.border = "1px solid #d3d3d3";
+      textarea.style.borderRadius = "4px";
+      textarea.style.backgroundColor = "var(--yt-spec-general-background-a)";
+      textarea.style.color = "var(--yt-spec-text-primary)";
+      return textarea;
+    }
+
+    function showQuestionInput(show: boolean): void {
+      const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+      if (questionInput) {
+        questionInput.style.display = show ? "block" : "none";
+      }
+    }
+
+    function updateButtonText(presetId: string): void {
+      const button = document.getElementById("summarize-btn") as HTMLButtonElement;
+      if (button) {
+        if (presetId === "custom_query") {
+          button.innerText = "❓ Ask Question";
+        } else {
+          button.innerText = "✨ Summarize";
+        }
+      }
+    }
+
+    function getQuestionText(): string {
+      const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+      return questionInput ? questionInput.value.trim() : "";
+    }
+
+    function validateQuestion(question: string): boolean {
+      return question.trim().length > 0;
+    }
+
+    describe("createQuestionInput", () => {
+      it("should create question input field with proper attributes", () => {
+        const textarea = createQuestionInput();
+        
+        expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+        expect(textarea.id).toBe("question-input");
+        expect(textarea.rows).toBe(3);
+        expect(textarea.placeholder).toBe("What would you like to ask about this video?");
+        expect(textarea.classList.contains("summary-select")).toBe(true);
+        expect(textarea.classList.contains("question-textarea")).toBe(true);
+      });
+
+      it("should be initially hidden", () => {
+        const textarea = createQuestionInput();
+        expect(textarea.style.display).toBe("none");
+      });
+
+      it("should have proper styling", () => {
+        const textarea = createQuestionInput();
+        expect(textarea.style.minHeight).toBe("80px");
+        expect(textarea.style.maxHeight).toBe("200px");
+        expect(textarea.style.width).toBe("100%");
+        expect(textarea.style.resize).toBe("vertical");
+      });
+    });
+
+    describe("showQuestionInput", () => {
+      it("should show question input when Ask a Question preset is selected", () => {
+        const textarea = createQuestionInput();
+        document.body.appendChild(textarea);
+
+        showQuestionInput(true);
+        
+        const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+        expect(questionInput).toBeTruthy();
+        expect(questionInput.style.display).toBe("block");
+      });
+
+      it("should hide question input when other preset is selected", () => {
+        const textarea = createQuestionInput();
+        textarea.style.display = "block";
+        document.body.appendChild(textarea);
+
+        showQuestionInput(false);
+        
+        const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+        expect(questionInput).toBeTruthy();
+        expect(questionInput.style.display).toBe("none");
+      });
+    });
+
+    describe("updateButtonText", () => {
+      it("should change button text to 'Ask Question' when Ask a Question preset is selected", () => {
+        const button = document.createElement("button");
+        button.id = "summarize-btn";
+        button.innerText = "✨ Summarize";
+        document.body.appendChild(button);
+
+        updateButtonText("custom_query");
+        
+        const updatedButton = document.getElementById("summarize-btn") as HTMLButtonElement;
+        expect(updatedButton).toBeTruthy();
+        expect(updatedButton.innerText).toBe("❓ Ask Question");
+      });
+
+      it("should revert button text to 'Summarize' when other preset is selected", () => {
+        const button = document.createElement("button");
+        button.id = "summarize-btn";
+        button.innerText = "❓ Ask Question";
+        document.body.appendChild(button);
+
+        updateButtonText("summary");
+        
+        const updatedButton = document.getElementById("summarize-btn") as HTMLButtonElement;
+        expect(updatedButton).toBeTruthy();
+        expect(updatedButton.innerText).toBe("✨ Summarize");
+      });
+    });
+
+    describe("getQuestionText", () => {
+      it("should return trimmed question text from textarea", () => {
+        const textarea = document.createElement("textarea");
+        textarea.id = "question-input";
+        textarea.value = "  What is the main topic?  ";
+        document.body.appendChild(textarea);
+
+        const question = getQuestionText();
+        
+        expect(question).toBe("What is the main topic?");
+      });
+
+      it("should return empty string when textarea is empty", () => {
+        const textarea = document.createElement("textarea");
+        textarea.id = "question-input";
+        textarea.value = "";
+        document.body.appendChild(textarea);
+
+        const question = getQuestionText();
+        
+        expect(question).toBe("");
+      });
+
+      it("should handle multi-line questions", () => {
+        const textarea = document.createElement("textarea");
+        textarea.id = "question-input";
+        textarea.value = "What is the main topic?\nCan you explain it in detail?";
+        document.body.appendChild(textarea);
+
+        const question = getQuestionText();
+        
+        expect(question).toBe("What is the main topic?\nCan you explain it in detail?");
+      });
+    });
+
+    describe("validateQuestion", () => {
+      it("should return true for valid non-empty question", () => {
+        expect(validateQuestion("What is this about?")).toBe(true);
+        expect(validateQuestion("How does this work?")).toBe(true);
+      });
+
+      it("should return false for empty or whitespace-only questions", () => {
+        expect(validateQuestion("")).toBe(false);
+        expect(validateQuestion("   ")).toBe(false);
+        expect(validateQuestion("\n\t")).toBe(false);
+      });
+    });
+  });
 });

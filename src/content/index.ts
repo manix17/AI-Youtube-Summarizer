@@ -26,6 +26,9 @@ function injectSummarizeUI(): void {
     const uiContainer = document.createElement("div");
     uiContainer.id = "summarize-ui-container";
     uiContainer.classList.add("summarize-ui-container");
+    // Ensure the container displays as block to stack elements vertically
+    uiContainer.style.display = "block";
+    uiContainer.style.width = "100%";
 
     const profileSelect = document.createElement("select");
     profileSelect.id = "profile-select";
@@ -44,10 +47,32 @@ function injectSummarizeUI(): void {
     button.id = "summarize-btn";
     button.classList.add("summarize-btn");
 
-    uiContainer.appendChild(profileSelect);
-    uiContainer.appendChild(presetSelect);
-    uiContainer.appendChild(languageSelect);
-    uiContainer.appendChild(button);
+    // Create a top row container for horizontal elements
+    const topRow = document.createElement("div");
+    topRow.classList.add("summarize-top-row");
+    topRow.style.display = "flex";
+    topRow.style.gap = "8px";
+    topRow.style.alignItems = "center";
+    topRow.style.marginBottom = "8px";
+    topRow.style.width = "100%";
+
+    topRow.appendChild(profileSelect);
+    topRow.appendChild(presetSelect);
+    topRow.appendChild(languageSelect);
+    topRow.appendChild(button);
+
+    // Create question input that will appear below - ensure it's on its own line
+    const questionInput = createQuestionInput();
+
+    // Create a wrapper for question input to ensure proper layout
+    const questionWrapper = document.createElement("div");
+    questionWrapper.style.width = "100%";
+    questionWrapper.style.display = "block";
+    questionWrapper.style.clear = "both";
+    questionWrapper.appendChild(questionInput);
+
+    uiContainer.appendChild(topRow);
+    uiContainer.appendChild(questionWrapper);
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
@@ -528,6 +553,10 @@ async function handleProfileChange() {
       presetSelect.appendChild(option);
     }
     presetSelect.value = profile.currentPreset;
+    
+    // Update question input visibility and button text based on current preset
+    showQuestionInput(profile.currentPreset === "custom_query");
+    updateButtonText(profile.currentPreset);
   }
   if (profile) {
     languageSelect.innerHTML = "";
@@ -560,6 +589,10 @@ function handlePresetChange() {
     "preset-select"
   ) as HTMLSelectElement;
   const selectedPresetId = presetSelect.value;
+
+  // Show/hide question input and update button text based on preset
+  showQuestionInput(selectedPresetId === "custom_query");
+  updateButtonText(selectedPresetId);
 
   // Update the currentPreset value for the active profile in storage
   const profileKey = `profile_${currentProfileId}`;
@@ -636,6 +669,14 @@ async function handleSummarizeClick(): Promise<void> {
   }, 3000);
 
   try {
+    // Validate question if "Ask a Question" preset is selected
+    if (presetSelect.value === "custom_query") {
+      const question = getQuestionText();
+      if (!validateQuestion(question)) {
+        throw new Error("Please enter a question to ask about this video.");
+      }
+    }
+
     const transcript = await getTranscript();
     if (!transcript || transcript.trim() === "") {
       throw new Error("Could not retrieve a valid transcript.");
@@ -650,6 +691,7 @@ async function handleSummarizeClick(): Promise<void> {
         profileId: profileSelect.value,
         presetId: presetSelect.value,
         language: languageSelect.value,
+        question: presetSelect.value === "custom_query" ? getQuestionText() : undefined,
         ...metadata,
       },
     };
@@ -1163,3 +1205,74 @@ window.addEventListener("message", (event) => {
     }
   }
 });
+
+// --- Question Input Field Functions ---
+
+/**
+ * Creates the question input field for "Ask a Question" preset
+ */
+function createQuestionInput(): HTMLTextAreaElement {
+  const textarea = document.createElement("textarea");
+  textarea.id = "question-input";
+  textarea.placeholder = "What would you like to ask about this video?";
+  textarea.classList.add("summary-select", "question-textarea");
+  textarea.rows = 3;
+  textarea.style.display = "none";
+  textarea.style.resize = "vertical";
+  textarea.style.minHeight = "80px";
+  textarea.style.maxHeight = "200px";
+  textarea.style.width = "100%";
+  textarea.style.boxSizing = "border-box";
+  textarea.style.fontFamily = "inherit";
+  textarea.style.fontSize = "14px";
+  textarea.style.lineHeight = "1.4";
+  textarea.style.padding = "8px";
+  textarea.style.border = "1px solid #d3d3d3";
+  textarea.style.borderRadius = "4px";
+  textarea.style.backgroundColor = "var(--yt-spec-general-background-a)";
+  textarea.style.color = "var(--yt-spec-text-primary)";
+  // Ensure it's on its own line
+  textarea.style.clear = "both";
+  textarea.style.marginTop = "8px";
+  textarea.style.marginBottom = "0";
+  return textarea;
+}
+
+/**
+ * Shows or hides the question input field
+ */
+function showQuestionInput(show: boolean): void {
+  const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+  if (questionInput) {
+    questionInput.style.display = show ? "block" : "none";
+  }
+}
+
+/**
+ * Updates button text based on selected preset
+ */
+function updateButtonText(presetId: string): void {
+  const button = document.getElementById("summarize-btn") as HTMLButtonElement;
+  if (button) {
+    if (presetId === "custom_query") {
+      button.innerText = "❓ Ask Question";
+    } else {
+      button.innerText = "✨ Summarize";
+    }
+  }
+}
+
+/**
+ * Gets the question text from the input field
+ */
+function getQuestionText(): string {
+  const questionInput = document.getElementById("question-input") as HTMLTextAreaElement;
+  return questionInput ? questionInput.value.trim() : "";
+}
+
+/**
+ * Validates if question text is not empty
+ */
+function validateQuestion(question: string): boolean {
+  return question.trim().length > 0;
+}

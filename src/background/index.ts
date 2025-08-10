@@ -193,7 +193,8 @@ async function handleSummarize(
       request.payload.channelName,
       request.payload.videoDescription,
       request.payload.language,
-      request.payload.videoDate
+      request.payload.videoDate,
+      request.payload.question || ""
     );
 
     // 5. Track token usage for this summarization
@@ -356,7 +357,8 @@ async function handleSummarizeStreaming(
           };
           chrome.tabs.sendMessage(sender.tab.id, chunkMessage);
         }
-      }
+      },
+      request.payload.question || ""
     );
 
     // 5. Send completion message

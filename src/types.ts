@@ -34,6 +34,7 @@ export interface SummarizePayload extends VideoMetadata {
   profileId: string;
   presetId: string;
   language: string;
+  question?: string; // Optional question for "Ask a Question" preset
 }
 
 // Specific Message Types
