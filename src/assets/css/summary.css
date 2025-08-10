@@ -609,7 +609,8 @@
 }
 
 /* Dark mode button container */
-.summary-wrapper.dark .summary-button-container {
+.summary-wrapper.dark .summary-button-container,
+.summary-button-container.dark {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
   border-color: rgba(71, 85, 105, 0.6);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -623,7 +624,11 @@
 .summary-wrapper.dark .toggle-summary-btn,
 .summary-wrapper.dark .copy-summary-btn,
 .summary-wrapper.dark .download-summary-btn,
-.summary-wrapper.dark .fullscreen-summary-btn {
+.summary-wrapper.dark .fullscreen-summary-btn,
+.summary-button-container.dark .toggle-summary-btn,
+.summary-button-container.dark .copy-summary-btn,
+.summary-button-container.dark .download-summary-btn,
+.summary-button-container.dark .fullscreen-summary-btn {
   background: linear-gradient(135deg, rgba(71, 85, 105, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%);
   border-color: rgba(100, 116, 139, 0.6);
   color: #e2e8f0;
@@ -633,7 +638,11 @@
 .summary-wrapper.dark .toggle-summary-btn:hover,
 .summary-wrapper.dark .copy-summary-btn:hover,
 .summary-wrapper.dark .download-summary-btn:hover,
-.summary-wrapper.dark .fullscreen-summary-btn:hover {
+.summary-wrapper.dark .fullscreen-summary-btn:hover,
+.summary-button-container.dark .toggle-summary-btn:hover,
+.summary-button-container.dark .copy-summary-btn:hover,
+.summary-button-container.dark .download-summary-btn:hover,
+.summary-button-container.dark .fullscreen-summary-btn:hover {
   background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
   border-color: rgba(96, 165, 250, 0.8);
   color: white;
@@ -644,7 +653,11 @@
 .summary-wrapper.dark .toggle-summary-btn:active,
 .summary-wrapper.dark .copy-summary-btn:active,
 .summary-wrapper.dark .download-summary-btn:active,
-.summary-wrapper.dark .fullscreen-summary-btn:active {
+.summary-wrapper.dark .fullscreen-summary-btn:active,
+.summary-button-container.dark .toggle-summary-btn:active,
+.summary-button-container.dark .copy-summary-btn:active,
+.summary-button-container.dark .download-summary-btn:active,
+.summary-button-container.dark .fullscreen-summary-btn:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

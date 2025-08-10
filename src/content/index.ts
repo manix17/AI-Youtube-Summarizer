@@ -53,13 +53,24 @@ function injectSummarizeUI(): void {
     topRow.style.display = "flex";
     topRow.style.gap = "8px";
     topRow.style.alignItems = "center";
+    topRow.style.justifyContent = "space-between";
     topRow.style.marginBottom = "8px";
     topRow.style.width = "100%";
 
-    topRow.appendChild(profileSelect);
-    topRow.appendChild(presetSelect);
-    topRow.appendChild(languageSelect);
-    topRow.appendChild(button);
+    // Create left side container for controls
+    const leftControls = document.createElement("div");
+    leftControls.style.display = "flex";
+    leftControls.style.gap = "8px";
+    leftControls.style.alignItems = "center";
+    
+    leftControls.appendChild(profileSelect);
+    leftControls.appendChild(presetSelect);
+    leftControls.appendChild(languageSelect);
+    leftControls.appendChild(button);
+
+    topRow.appendChild(leftControls);
+    
+    // Add button container to the right side of top row (will be added later after it's created)
 
     // Create question input that will appear below - ensure it's on its own line
     const questionInput = createQuestionInput();
@@ -69,10 +80,12 @@ function injectSummarizeUI(): void {
     questionWrapper.style.width = "100%";
     questionWrapper.style.display = "block";
     questionWrapper.style.clear = "both";
+    questionWrapper.style.marginBottom = "16px"; // Space between question input and summary content
+    questionWrapper.style.position = "relative";
+    questionWrapper.style.zIndex = "10"; // Lower than toolbar but higher than default
     questionWrapper.appendChild(questionInput);
 
     uiContainer.appendChild(topRow);
-    uiContainer.appendChild(questionWrapper);
 
     const summaryContainer = document.createElement("div");
     summaryContainer.id = "summary-container";
@@ -116,17 +129,34 @@ function injectSummarizeUI(): void {
     const buttonContainer = document.createElement("div");
     buttonContainer.id = "summary-button-container";
     buttonContainer.classList.add("summary-button-container");
+    // Override positioning and sizing to be inline with top controls
+    buttonContainer.style.position = "relative";
+    buttonContainer.style.top = "auto";
+    buttonContainer.style.margin = "0";
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "6px";
+    buttonContainer.style.alignItems = "center";
+    // Match height of form elements (selects and button)
+    buttonContainer.style.height = "36px";
+    buttonContainer.style.padding = "4px 8px";
     buttonContainer.appendChild(fullscreenButton);
     buttonContainer.appendChild(downloadButton);
     buttonContainer.appendChild(copyButton);
     buttonContainer.appendChild(toggleButton);
 
-    // Create a wrapper to hold both summary container and button container
+    // Add button container to the right side of the top row
+    topRow.appendChild(buttonContainer);
+
+    // Create a wrapper to hold question input and summary container
     const summaryWrapper = document.createElement("div");
     summaryWrapper.id = "summary-wrapper";
     summaryWrapper.classList.add("summary-wrapper");
+    
+    // Add question input first
+    summaryWrapper.appendChild(questionWrapper);
+    
+    // Add summary container after question input
     summaryWrapper.appendChild(summaryContainer);
-    summaryWrapper.appendChild(buttonContainer);
 
     targetElement.prepend(summaryWrapper);
     targetElement.prepend(uiContainer);
@@ -156,6 +186,7 @@ function applyCurrentTheme(): void {
   const summaryContainer = document.getElementById("summary-container");
   const summaryWrapper = document.querySelector(".summary-wrapper");
   const uiContainer = document.getElementById("summarize-ui-container");
+  const buttonContainer = document.getElementById("summary-button-container");
   
   
   if (summaryContainer) {
@@ -166,6 +197,9 @@ function applyCurrentTheme(): void {
   }
   if (uiContainer) {
     uiContainer.classList.toggle("dark", isDarkMode);
+  }
+  if (buttonContainer) {
+    buttonContainer.classList.toggle("dark", isDarkMode);
   }
 }
 
@@ -1231,10 +1265,12 @@ function createQuestionInput(): HTMLTextAreaElement {
   textarea.style.borderRadius = "4px";
   textarea.style.backgroundColor = "var(--yt-spec-general-background-a)";
   textarea.style.color = "var(--yt-spec-text-primary)";
-  // Ensure it's on its own line
+  // Ensure it's on its own line, positioned after summary
   textarea.style.clear = "both";
-  textarea.style.marginTop = "8px";
+  textarea.style.marginTop = "0";
   textarea.style.marginBottom = "0";
+  textarea.style.position = "relative";
+  textarea.style.zIndex = "10"; // Lower than toolbar (z-index: 1000) but higher than default
   return textarea;
 }
 
