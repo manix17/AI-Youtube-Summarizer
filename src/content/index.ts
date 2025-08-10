@@ -763,7 +763,7 @@ function handleResponse(response: SummarizeResponseMessage): void {
   } else {
     handleError(new Error("Failed to get a valid summary."));
   }
-  button.innerText = "✨ Summarize Video";
+  button.innerText = "✨ Summarize";
   button.disabled = false;
 }
 
@@ -777,7 +777,7 @@ function handleError(error: Error): void {
     `<p style="color: red;"><b>Error:</b> ${error.message}</p>`
   );
   const button = document.getElementById("summarize-btn") as HTMLButtonElement;
-  button.innerText = "✨ Summarize Video";
+  button.innerText = "✨ Summarize";
   button.disabled = false;
 }
 
@@ -897,7 +897,7 @@ function handleStreamingChunk(chunk: any): void {
   if (chunk.isComplete) {
     // Streaming is complete
     const button = document.getElementById("summarize-btn") as HTMLButtonElement;
-    button.innerText = "✨ Summarize Video";
+    button.innerText = "✨ Summarize";
     button.disabled = false;
     
     // Scroll to summary container once complete
@@ -1215,7 +1215,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Handle streaming completion - this is sent by background script after streaming is done
     
     const button = document.getElementById("summarize-btn") as HTMLButtonElement;
-    button.innerText = "✨ Summarize Video";
+    button.innerText = "✨ Summarize";
     button.disabled = false;
     
     // Clean up streaming indicator CSS

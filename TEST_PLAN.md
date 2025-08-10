@@ -40,17 +40,17 @@ This document outlines the testing strategy and detailed test cases for the AI Y
 | Test ID | Description | Test Steps | Expected Result | Type |
 | :--- | :--- | :--- | :--- | :--- |
 | **UI-001** | Verify the extension icon appears on the browser toolbar after installation. | 1. Install the extension. <br> 2. Navigate to any website. | The extension icon is visible in the browser's toolbar/extensions menu. | E2E |
-| **UI-002** | Verify the "Summarize Video" button appears on a valid YouTube video page. | 1. Open a valid `youtube.com/watch?v=` URL. <br> 2. Wait for the page to load. | The "✨ Summarize Video" button is visible below the video player. | E2E |
-| **UI-003** | Verify the "Summarize Video" button does NOT appear on non-video YouTube pages. | 1. Navigate to the YouTube homepage, a channel page, or search results. | The "✨ Summarize Video" button is not present. | E2E |
-| **UI-004** | Verify the "Summarize Video" button does NOT appear on non-YouTube websites. | 1. Navigate to a non-YouTube URL (e.g., `google.com`). | The "✨ Summarize Video" button is not present. | E2E |
+| **UI-002** | Verify the "Summarize Video" button appears on a valid YouTube video page. | 1. Open a valid `youtube.com/watch?v=` URL. <br> 2. Wait for the page to load. | The "✨ Summarize" button is visible below the video player. | E2E |
+| **UI-003** | Verify the "Summarize Video" button does NOT appear on non-video YouTube pages. | 1. Navigate to the YouTube homepage, a channel page, or search results. | The "✨ Summarize" button is not present. | E2E |
+| **UI-004** | Verify the "Summarize Video" button does NOT appear on non-YouTube websites. | 1. Navigate to a non-YouTube URL (e.g., `google.com`). | The "✨ Summarize" button is not present. | E2E |
 | **UI-005** | Test the responsiveness of the injected summary UI. | 1. Generate a summary on a video page. <br> 2. Resize the browser window to different widths (desktop, tablet, mobile). | The summary container and its content adjust correctly without breaking the layout. | E2E |
 
 ### 3.2. Core Functionality
 
 | Test ID | Description | Test Steps | Expected Result | Type |
 | :--- | :--- | :--- | :--- | :--- |
-| **CORE-001** | Generate a summary for a short video (< 1 minute). | 1. Navigate to a short video with a transcript. <br> 2. Click "✨ Summarize Video". | A loading indicator appears, followed by a correctly formatted summary. | E2E |
-| **CORE-002** | Generate a summary for a long video (> 30 minutes). | 1. Navigate to a long video with a transcript. <br> 2. Click "✨ Summarize Video". | A loading indicator appears, followed by a correctly formatted summary. The process may take longer but should not time out. | E2E |
+| **CORE-001** | Generate a summary for a short video (< 1 minute). | 1. Navigate to a short video with a transcript. <br> 2. Click "✨ Summarize". | A loading indicator appears, followed by a correctly formatted summary. | E2E |
+| **CORE-002** | Generate a summary for a long video (> 30 minutes). | 1. Navigate to a long video with a transcript. <br> 2. Click "✨ Summarize". | A loading indicator appears, followed by a correctly formatted summary. The process may take longer but should not time out. | E2E |
 | **CORE-003** | Verify that clickable timestamps in the summary work correctly. | 1. Generate a summary that includes timestamps. <br> 2. Click on a timestamp (e.g., `[01:23]`). | The YouTube video player jumps to the corresponding time (1 minute, 23 seconds). | E2E |
 | **CORE-004** | Verify summary is generated based on the active profile's prompt. | 1. Create a new profile with a unique prompt (e.g., "Summarize this as a poem"). <br> 2. Activate the new profile. <br> 3. Summarize a video. | The generated summary follows the unique format defined in the custom prompt. | E2E |
 | **CORE-005** | Test `dom_parser` utility for extracting transcript. | 1. Provide mock HTML content of a YouTube page to the parser function. | The function correctly extracts and formats the full transcript text. | Unit |
@@ -72,11 +72,11 @@ This document outlines the testing strategy and detailed test cases for the AI Y
 
 | Test ID | Description | Test Steps | Expected Result | Type |
 | :--- | :--- | :--- | :--- | :--- |
-| **ERR-001** | Test a YouTube video with no transcript available. | 1. Navigate to a video where transcripts are disabled. <br> 2. Click "✨ Summarize Video". | An error message "Could not find a transcript for this video" is displayed in the summary area. | E2E |
+| **ERR-001** | Test a YouTube video with no transcript available. | 1. Navigate to a video where transcripts are disabled. <br> 2. Click "✨ Summarize". | An error message "Could not find a transcript for this video" is displayed in the summary area. | E2E |
 | **ERR-002** | Test a video with a non-English transcript. | 1. Navigate to a video with only a non-English transcript (e.g., Spanish). <br> 2. Summarize the video with `TARGET_LANGUAGE` set to English. | The extension successfully fetches the transcript and generates a summary. | E2E |
-| **ERR-003** | Simulate an API failure (e.g., 500 server error). | 1. Intercept the API call and force a 500 response. <br> 2. Click "✨ Summarize Video". | An error message is displayed, indicating the AI service failed. | E2E |
-| **ERR-004** | Simulate network disconnection. | 1. Disable the network connection using browser dev tools. <br> 2. Click "✨ Summarize Video". | A relevant error message (e.g., "Network error") is displayed. | E2E |
-| **ERR-005** | Test with a live stream video. | 1. Navigate to a YouTube live stream. | The "✨ Summarize Video" button should either be disabled or show an error message indicating live streams cannot be summarized. | E2E |
+| **ERR-003** | Simulate an API failure (e.g., 500 server error). | 1. Intercept the API call and force a 500 response. <br> 2. Click "✨ Summarize". | An error message is displayed, indicating the AI service failed. | E2E |
+| **ERR-004** | Simulate network disconnection. | 1. Disable the network connection using browser dev tools. <br> 2. Click "✨ Summarize". | A relevant error message (e.g., "Network error") is displayed. | E2E |
+| **ERR-005** | Test with a live stream video. | 1. Navigate to a YouTube live stream. | The "✨ Summarize" button should either be disabled or show an error message indicating live streams cannot be summarized. | E2E |
 | **ERR-006** | Test with an age-restricted video. | 1. Navigate to an age-restricted video (while logged out). | The extension should handle the login wall gracefully, likely failing with a "transcript not found" error. | E2E |
 | **ERR-007** | Test background script error handling for failed API calls. | 1. Mock `fetch` to throw an error. <br> 2. Send a "summarize" message to the background script. | The script catches the error and sends an error response message back to the content script. | Unit |
 
