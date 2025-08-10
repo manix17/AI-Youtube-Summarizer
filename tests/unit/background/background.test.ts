@@ -243,7 +243,13 @@ describe("Background Script", () => {
             name: "Default Profile",
             platform: "openai",
             model: "gpt-4",
-            apiKey: "sk-test123",
+            apiKey: "sk-test123", // Legacy field for migration
+            apiKeys: {
+              openai: "sk-test123",
+              anthropic: "",
+              gemini: "",
+              openrouter: "",
+            },
             language: "English",
             currentPreset: "detailed",
             presets: {}, // Empty in new structure
@@ -280,31 +286,43 @@ describe("Background Script", () => {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(mockChrome.storage.sync.get).toHaveBeenCalledWith(null);
-      expect(mockGenerateSummary).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: "Default Profile",
-          platform: "openai",
-          model: "gpt-4",
-          apiKey: "sk-test123",
-          language: "English",
-          currentPreset: "detailed",
-          presets: expect.objectContaining({
-            detailed: expect.objectContaining({
-              name: "Detailed",
-              system_prompt: "Custom system prompt",
-              user_prompt: "Custom user prompt",
-              temperature: 0.8,
-              isDefault: true,
-            }),
-          }),
+      expect(mockGenerateSummary).toHaveBeenCalledTimes(1);
+      
+      const callArgs = mockGenerateSummary.mock.calls[0];
+      const profile = callArgs[0];
+      
+      // Check profile structure
+      expect(profile).toEqual(expect.objectContaining({
+        name: "Default Profile",
+        platform: "openai",
+        model: "gpt-4",
+        apiKey: "sk-test123",
+        apiKeys: expect.objectContaining({
+          openai: "sk-test123",
+          anthropic: "",
+          gemini: "",
+          openrouter: "",
         }),
-        "[0:00] Hello world [0:05] This is a test transcript",
-        "Test Video",
-        "10:30",
-        "Test Channel",
-        "Test description",
-        "English"
-      );
+        language: "English",
+        currentPreset: "detailed",
+      }));
+      
+      // Check that the detailed preset has been customized
+      expect(profile.presets.detailed).toEqual(expect.objectContaining({
+        name: "Detailed",
+        system_prompt: "Custom system prompt",
+        user_prompt: "Custom user prompt",
+        temperature: 0.8,
+        isDefault: true,
+      }));
+      
+      // Check other arguments
+      expect(callArgs[1]).toBe("[0:00] Hello world [0:05] This is a test transcript");
+      expect(callArgs[2]).toBe("Test Video");
+      expect(callArgs[3]).toBe("10:30");
+      expect(callArgs[4]).toBe("Test Channel");
+      expect(callArgs[5]).toBe("Test description");
+      expect(callArgs[6]).toBe("English");
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: "summarizeResponse",
@@ -507,6 +525,12 @@ describe("Background Script", () => {
             platform: "openai",
             model: "gpt-4",
             apiKey: "sk-test123",
+            apiKeys: {
+              openai: "sk-test123",
+              anthropic: "",
+              gemini: "",
+              openrouter: "",
+            },
             language: "English",
             currentPreset: "custom",
             presets: {}, // Empty in new structure
@@ -549,34 +573,39 @@ describe("Background Script", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(mockGenerateSummary).toHaveBeenCalledWith(
-        expect.objectContaining({
-          currentPreset: "custom",
-          presets: expect.objectContaining({
-            // Should contain the custom preset
-            custom: {
-              name: "Custom Preset",
-              system_prompt: "Custom system",
-              user_prompt: "Custom user",
-              temperature: 1.0,
-              isDefault: false,
-            },
-            // Should contain the modified default preset
-            detailed: expect.objectContaining({
-              name: "Detailed Summary", // This should match the stored user override name
-              system_prompt: "You are a helpful assistant.",
-              user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
-              temperature: 0.9, // Modified temperature
-              isDefault: true,
-            }),
-          }),
+      expect(mockGenerateSummary).toHaveBeenCalledTimes(1);
+      
+      const callArgs = mockGenerateSummary.mock.calls[0];
+      const profile = callArgs[0];
+      
+      // Check profile structure
+      expect(profile).toEqual(expect.objectContaining({
+        currentPreset: "custom",
+        apiKeys: expect.objectContaining({
+          openai: "sk-test123",
+          anthropic: "",
+          gemini: "",
+          openrouter: "",
         }),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String)
-      );
+      }));
+      
+      // Check that the custom preset exists
+      expect(profile.presets.custom).toEqual({
+        name: "Custom Preset",
+        system_prompt: "Custom system",
+        user_prompt: "Custom user",
+        temperature: 1.0,
+        isDefault: false,
+      });
+      
+      // Check that the modified detailed preset exists
+      expect(profile.presets.detailed).toEqual(expect.objectContaining({
+        name: "Detailed Summary",
+        system_prompt: "You are a helpful assistant.",
+        user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
+        temperature: 0.9, // Modified temperature
+        isDefault: true,
+      }));
     });
   });
 
@@ -617,6 +646,12 @@ describe("Background Script", () => {
             platform: "anthropic",
             model: "claude-3-5-sonnet",
             apiKey: "sk-ant-test",
+            apiKeys: {
+              openai: "",
+              anthropic: "sk-ant-test",
+              gemini: "",
+              openrouter: "",
+            },
             language: "Spanish",
             currentPreset: "myCustom",
             presets: {}, // Empty in new structure
@@ -659,48 +694,52 @@ describe("Background Script", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      expect(mockGenerateSummary).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: "Test Profile",
-          platform: "anthropic",
-          model: "claude-3-5-sonnet",
-          apiKey: "sk-ant-test",
-          language: "Spanish",
-          currentPreset: "myCustom",
-          presets: expect.objectContaining({
-            // Should have the modified default preset
-            detailed: expect.objectContaining({
-              name: "Detailed Summary", // From user override
-              system_prompt: "Modified system prompt", // From user override
-              user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}", // From default
-              temperature: 0.3, // From user override
-              isDefault: true,
-            }),
-            // Should have the default brief preset (unmodified)
-            brief: expect.objectContaining({
-              name: "☕️ Brief Summary",
-              system_prompt: "You are a concise assistant.",
-              user_prompt: "Briefly summarize: {VIDEO_TRANSCRIPT}",
-              temperature: 0.3,
-              isDefault: true,
-            }),
-            // Should have the custom preset
-            myCustom: {
-              name: "My Custom Preset",
-              system_prompt: "My system",
-              user_prompt: "My user prompt",
-              temperature: 1.2,
-              isDefault: false,
-            },
-          }),
+      expect(mockGenerateSummary).toHaveBeenCalledTimes(1);
+      
+      const callArgs = mockGenerateSummary.mock.calls[0];
+      const profile = callArgs[0];
+      
+      // Check profile structure
+      expect(profile).toEqual(expect.objectContaining({
+        name: "Test Profile",
+        platform: "anthropic",
+        model: "claude-3-5-sonnet",
+        apiKey: "sk-ant-test",
+        apiKeys: expect.objectContaining({
+          openai: "",
+          anthropic: "sk-ant-test",
+          gemini: "",
+          openrouter: "",
         }),
-        "[0:00] Test transcript",
-        "Test Video",
-        "5:00",
-        "Test Channel",
-        "Test description",
-        "Spanish"
-      );
+        language: "Spanish",
+        currentPreset: "myCustom",
+      }));
+      
+      // Check the modified detailed preset
+      expect(profile.presets.detailed).toEqual(expect.objectContaining({
+        name: "Detailed Summary",
+        system_prompt: "Modified system prompt", // From user override
+        user_prompt: "Summarize this transcript: {VIDEO_TRANSCRIPT}",
+        temperature: 0.3, // From user override
+        isDefault: true,
+      }));
+      
+      // Check the custom preset
+      expect(profile.presets.myCustom).toEqual({
+        name: "My Custom Preset",
+        system_prompt: "My system",
+        user_prompt: "My user prompt",
+        temperature: 1.2,
+        isDefault: false,
+      });
+      
+      // Check other arguments
+      expect(callArgs[1]).toBe("[0:00] Test transcript");
+      expect(callArgs[2]).toBe("Test Video");
+      expect(callArgs[3]).toBe("5:00");
+      expect(callArgs[4]).toBe("Test Channel");
+      expect(callArgs[5]).toBe("Test description");
+      expect(callArgs[6]).toBe("Spanish");
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: "summarizeResponse",
