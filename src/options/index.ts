@@ -323,12 +323,18 @@ document.addEventListener("DOMContentLoaded", () => {
     other: new Map() 
   };
   let isDropdownOpen = false;
+  let savedModelDisplayName = ""; // Store the display name when dropdown opens
 
   // Model search functionality
   function handleModelSearch(): void {
-    const searchTerm = modelSearchInput.value.toLowerCase();
-    renderModelOptions(searchTerm);
-    showModelDropdown();
+    // Use requestAnimationFrame to avoid interfering with input display
+    requestAnimationFrame(() => {
+      const searchTerm = modelSearchInput.value.toLowerCase();
+      renderModelOptions(searchTerm);
+      if (!isDropdownOpen) {
+        showModelDropdown();
+      }
+    });
   }
 
   function enableModelSearch(): void {
@@ -341,20 +347,31 @@ document.addEventListener("DOMContentLoaded", () => {
     if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
       isDropdownOpen = true;
       modelDropdown.classList.add("show");
-      if (!modelSearchInput.value) {
-        renderModelOptions("");
-      }
+      
+      // Save the current display name and clear the input for searching
+      savedModelDisplayName = modelSearchInput.value;
+      modelSearchInput.value = "";
+      modelSearchInput.placeholder = "Type to search models...";
+      
+      renderModelOptions("");
     }
   }
 
   function hideModelDropdown(): void {
     isDropdownOpen = false;
     modelDropdown.classList.remove("show");
+    
+    // Restore the selected model display name if no model was selected
+    if (modelSearchInput.value === "" && savedModelDisplayName) {
+      modelSearchInput.value = savedModelDisplayName;
+      modelSearchInput.placeholder = "Search and select a model...";
+    }
   }
 
   function selectModel(value: string, displayName: string): void {
     selectedModelInput.value = value;
     modelSearchInput.value = displayName;
+    savedModelDisplayName = displayName; // Update saved display name
     hideModelDropdown();
     
     // Update the profile
@@ -493,6 +510,15 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSearchInput?.addEventListener("blur", () => {
       // Delay hiding to allow clicking on options
       setTimeout(() => hideModelDropdown(), 150);
+    });
+    
+    // Handle escape key to close dropdown and restore display name
+    modelSearchInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isDropdownOpen) {
+        modelSearchInput.value = savedModelDisplayName;
+        hideModelDropdown();
+        modelSearchInput.blur();
+      }
     });
 
     // Click outside to close dropdown
@@ -1095,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Set the current model
     selectedModelInput.value = currentModel;
-    
+  
     // Find the display name for the current model
     let currentModelDisplay = "";
     if (currentModel) {
@@ -1103,6 +1129,7 @@ document.addEventListener("DOMContentLoaded", () => {
                            availableModels.other.get(currentModel)?.label || 
                            currentModel;
       modelSearchInput.value = currentModelDisplay;
+      savedModelDisplayName = currentModelDisplay; // Initialize saved display name
     } else if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
       // Auto-select the first available model
       const firstModel = availableModels.recommended.size > 0 
@@ -1111,6 +1138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       selectedModelInput.value = firstModel[0];
       modelSearchInput.value = firstModel[1].label;
+      savedModelDisplayName = firstModel[1].label; // Initialize saved display name
       profiles[currentProfileId].models[platform] = firstModel[0];
       saveSettings();
     }
