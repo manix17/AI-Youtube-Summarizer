@@ -383,11 +383,6 @@ async function handleSummarizeStreaming(
     try {
       const preset = fullProfile.presets[fullProfile.currentPreset];
       if (preset && result.tokenUsage) {
-        console.log(`[${fullProfile.platform}] Tracking streaming token usage:`, {
-          platform: fullProfile.platform,
-          tokenUsage: result.tokenUsage,
-          hasTokenUsage: !!result.tokenUsage
-        });
         await trackSummarization(
           fullProfile.platform,
           preset.system_prompt,
@@ -399,7 +394,6 @@ async function handleSummarizeStreaming(
             outputTokens: result.tokenUsage.outputTokens
           }
         );
-        console.log(`[${fullProfile.platform}] Streaming token usage tracking completed`);
       } else {
         console.warn(`[${fullProfile.platform}] No token usage data available for tracking:`, {
           hasPreset: !!preset,
