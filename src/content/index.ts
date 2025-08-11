@@ -560,8 +560,6 @@ async function loadProfiles() {
       };
     }
 
-    console.log("[DEBUG] loadProfiles - Final profiles:", profiles);
-
     // Populate the UI now that profiles are guaranteed to exist
     profileSelect.innerHTML = "";
     for (const id in profiles) {
