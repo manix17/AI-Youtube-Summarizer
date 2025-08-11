@@ -201,6 +201,11 @@ async function handleSummarize(
     try {
       const preset = fullProfile.presets[fullProfile.currentPreset];
       if (preset) {
+        console.log(`[${fullProfile.platform}] Tracking token usage:`, {
+          platform: fullProfile.platform,
+          tokenUsage: result.tokenUsage,
+          hasTokenUsage: !!result.tokenUsage
+        });
         await trackSummarization(
           fullProfile.platform,
           preset.system_prompt,
@@ -209,6 +214,7 @@ async function handleSummarize(
           result.summary,
           result.tokenUsage
         );
+        console.log(`[${fullProfile.platform}] Token usage tracking completed`);
       }
     } catch (trackingError) {
       console.warn("Failed to track token usage:", trackingError);
@@ -377,6 +383,11 @@ async function handleSummarizeStreaming(
     try {
       const preset = fullProfile.presets[fullProfile.currentPreset];
       if (preset && result.tokenUsage) {
+        console.log(`[${fullProfile.platform}] Tracking streaming token usage:`, {
+          platform: fullProfile.platform,
+          tokenUsage: result.tokenUsage,
+          hasTokenUsage: !!result.tokenUsage
+        });
         await trackSummarization(
           fullProfile.platform,
           preset.system_prompt,
@@ -388,6 +399,13 @@ async function handleSummarizeStreaming(
             outputTokens: result.tokenUsage.outputTokens
           }
         );
+        console.log(`[${fullProfile.platform}] Streaming token usage tracking completed`);
+      } else {
+        console.warn(`[${fullProfile.platform}] No token usage data available for tracking:`, {
+          hasPreset: !!preset,
+          hasTokenUsage: !!result.tokenUsage,
+          tokenUsage: result.tokenUsage
+        });
       }
     } catch (trackingError) {
       console.warn("Failed to track summarization usage:", trackingError);

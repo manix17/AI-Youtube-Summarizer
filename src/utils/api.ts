@@ -158,6 +158,7 @@ function extractSummaryFromResponse(
         const openaiData = data as OpenAIResponse;
         summary = openaiData.choices[0].message.content;
         if (openaiData.usage) {
+          // completion_tokens already includes reasoning_tokens - no need to add separately
           tokenUsage = {
             inputTokens: openaiData.usage.prompt_tokens,
             outputTokens: openaiData.usage.completion_tokens,
@@ -201,6 +202,10 @@ function extractSummaryFromResponse(
         throw new Error(`Unsupported platform: ${platform}`);
     }
 
+    console.log(`[${platform}] Final non-streaming result:`, { 
+      summaryLength: summary.length, 
+      tokenUsage 
+    });
     return { summary, tokenUsage };
   } catch (error) {
     console.error("Error extracting summary:", error, "Full response:", data);
@@ -386,7 +391,8 @@ function buildStreamingRequestPayload(
     case "openrouter":
       return {
         ...basePayload,
-        stream: true
+        stream: true,
+        stream_options: { include_usage: true }
       };
     case "anthropic":
       return {
@@ -407,30 +413,69 @@ function buildStreamingRequestPayload(
  * @param {string} chunk - Raw chunk data.
  * @returns {SummaryChunk | null} Parsed chunk or null if not valid.
  */
-function parseStreamingChunk(platform: Platform, chunk: string): SummaryChunk | null {
+function parseStreamingChunk(platform: string, chunk: string): SummaryChunk | null {
   try {
-    // Remove "data: " prefix if present
-    const cleanChunk = chunk.replace(/^data:\s*/, '').trim();
+    // Remove 'data: ' prefix if present
+    let cleanChunk = chunk.replace(/^data:\s*/, '').trim();
+
+
     
-    if (cleanChunk === '[DONE]' || cleanChunk === '') {
-      return { content: '', isComplete: true };
+    // Skip empty chunks or [DONE] markers
+    if (!cleanChunk || cleanChunk === '[DONE]') {
+
+      return null;
+    }
+
+    // Skip incomplete JSON chunks (common in streaming)
+    if (!cleanChunk.startsWith('{') || !cleanChunk.endsWith('}')) {
+
+      return null;
+    }
+
+    // Additional validation: check for balanced braces
+    let braceCount = 0;
+    for (const char of cleanChunk) {
+      if (char === '{') braceCount++;
+      if (char === '}') braceCount--;
+    }
+    if (braceCount !== 0) {
+
+      return null; // Unbalanced braces indicate incomplete JSON
     }
 
     const data = JSON.parse(cleanChunk);
+    
+
 
     switch (platform) {
       case "openai":
       case "openrouter":
+        let content = '';
+        let isComplete = false;
+        let tokenUsage: TokenUsageResult | undefined;
+        
+        // Extract content from delta if present
         if (data.choices && data.choices[0] && data.choices[0].delta) {
-          const deltaContent = data.choices[0].delta.content || '';
-          const isComplete = data.choices[0].finish_reason !== null;
+          content = data.choices[0].delta.content || '';
+          isComplete = data.choices[0].finish_reason !== null;
+        }
+        
+        // Extract usage data if present (can be in any chunk)
+        if (data.usage) {
+          // completion_tokens already includes reasoning_tokens - no need to add separately
+          tokenUsage = {
+            inputTokens: data.usage.prompt_tokens || 0,
+            outputTokens: data.usage.completion_tokens || 0
+          };
+
+        }
+        
+        // Return chunk if we have content, usage data, or completion
+        if (content || tokenUsage || isComplete) {
           return {
-            content: deltaContent,
+            content,
             isComplete,
-            tokenUsage: data.usage ? {
-              inputTokens: data.usage.prompt_tokens || 0,
-              outputTokens: data.usage.completion_tokens || 0
-            } : undefined
+            tokenUsage
           };
         }
         break;
@@ -444,11 +489,27 @@ function parseStreamingChunk(platform: Platform, chunk: string): SummaryChunk | 
         } else if (data.type === 'message_stop') {
           return {
             content: '',
-            isComplete: true,
-            tokenUsage: data.usage ? {
-              inputTokens: data.usage.input_tokens || 0,
+            isComplete: true
+          };
+        } else if (data.type === 'message_start' && data.message && data.message.usage) {
+          // Anthropic sends input token data in message_start events
+          return {
+            content: '',
+            isComplete: false,
+            tokenUsage: {
+              inputTokens: data.message.usage.input_tokens || 0,
+              outputTokens: 0 // Will be updated later in message_delta
+            }
+          };
+        } else if (data.type === 'message_delta' && data.usage) {
+          // Anthropic sends output token data in message_delta events
+          return {
+            content: '',
+            isComplete: false,
+            tokenUsage: {
+              inputTokens: 0, // This will be merged with the input tokens from message_start
               outputTokens: data.usage.output_tokens || 0
-            } : undefined
+            }
           };
         }
         break;
@@ -466,10 +527,20 @@ function parseStreamingChunk(platform: Platform, chunk: string): SummaryChunk | 
               isComplete,
               tokenUsage: data.usageMetadata ? {
                 inputTokens: data.usageMetadata.promptTokenCount || 0,
-                outputTokens: data.usageMetadata.candidatesTokenCount || 0
+                outputTokens: (data.usageMetadata.candidatesTokenCount || 0) + (data.usageMetadata.thoughtsTokenCount || 0)
               } : undefined
             };
           }
+        } else if (data.usageMetadata && !data.candidates) {
+          // Gemini sometimes sends usage data in separate chunks
+          return {
+            content: '',
+            isComplete: false,
+            tokenUsage: {
+              inputTokens: data.usageMetadata.promptTokenCount || 0,
+              outputTokens: (data.usageMetadata.candidatesTokenCount || 0) + (data.usageMetadata.thoughtsTokenCount || 0)
+            }
+          };
         }
         
         // Check for completion indicators
@@ -581,6 +652,11 @@ export async function generateSummaryStreaming(
     finalUserPrompt,
     temperature
   );
+  
+  // For OpenAI/OpenRouter, add stream_options to get usage data in streaming
+  if (platform === 'openai' || platform === 'openrouter') {
+    (payload as any).stream_options = { include_usage: true };
+  }
   const headers = buildRequestHeaders(platform, apiKey);
 
 
@@ -612,29 +688,113 @@ export async function generateSummaryStreaming(
         if (done) break;
 
         const chunkText = decoder.decode(value, { stream: true });
-        const lines = chunkText.split('\n');
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
+        
+        if (platform === 'anthropic') {
+          // Handle SSE format for Anthropic - process complete events
+          const events = chunkText.split('\n\n').filter(event => event.trim() !== '');
           
-          const parsedChunk = parseStreamingChunk(platform, line);
-          if (parsedChunk) {
-            if (parsedChunk.content) {
-              fullSummary += parsedChunk.content;
+          for (const event of events) {
+            const lines = event.split('\n');
+            const dataLine = lines.find(line => line.startsWith('data:'));
+            
+            if (dataLine) {
+              const parsedChunk = parseStreamingChunk(platform, dataLine);
+              if (parsedChunk) {
+                if (parsedChunk.content) {
+                  fullSummary += parsedChunk.content;
+                }
+                if (parsedChunk.tokenUsage) {
+                  console.log(`[${platform}] Token usage received:`, parsedChunk.tokenUsage);
+                  // Merge token usage data (important for Anthropic which sends input/output separately)
+                  if (!tokenUsage) {
+                    tokenUsage = parsedChunk.tokenUsage;
+                  } else {
+                    tokenUsage = {
+                      inputTokens: Math.max(tokenUsage.inputTokens, parsedChunk.tokenUsage.inputTokens),
+                      outputTokens: Math.max(tokenUsage.outputTokens, parsedChunk.tokenUsage.outputTokens)
+                    };
+                  }
+                }
+                
+                // Call the chunk callback
+                onChunk({
+                  content: parsedChunk.content,
+                  isComplete: parsedChunk.isComplete,
+                  tokenUsage: parsedChunk.tokenUsage
+                });
+
+                if (parsedChunk.isComplete) {
+                  break;
+                }
+              }
             }
-            if (parsedChunk.tokenUsage) {
-              tokenUsage = parsedChunk.tokenUsage;
+          }
+        } else {
+          // Handle line-by-line format for other providers
+          const lines = chunkText.split('\n');
+
+
+          let completionDetected = false;
+          let chunksAfterCompletion = 0;
+          const maxChunksAfterCompletion = 5; // Limit to prevent infinite loops
+
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+
+
+            
+            // Check for [DONE] marker - this is the definitive end for OpenAI/OpenRouter
+            if (line.trim() === 'data: [DONE]') {
+              break;
             }
             
-            // Call the chunk callback
-            onChunk({
-              content: parsedChunk.content,
-              isComplete: parsedChunk.isComplete,
-              tokenUsage: parsedChunk.tokenUsage
-            });
 
-            if (parsedChunk.isComplete) {
-              break;
+            
+            const parsedChunk = parseStreamingChunk(platform, line);
+            
+
+            
+            if (parsedChunk) {
+              if (parsedChunk.content) {
+                fullSummary += parsedChunk.content;
+              }
+              if (parsedChunk.tokenUsage) {
+
+                // Merge token usage data
+                if (!tokenUsage) {
+                  tokenUsage = parsedChunk.tokenUsage;
+                } else {
+                  tokenUsage = {
+                    inputTokens: Math.max(tokenUsage.inputTokens, parsedChunk.tokenUsage.inputTokens),
+                    outputTokens: Math.max(tokenUsage.outputTokens, parsedChunk.tokenUsage.outputTokens)
+                  };
+                }
+              }
+              
+              // Call the chunk callback
+              onChunk({
+                content: parsedChunk.content,
+                isComplete: parsedChunk.isComplete,
+                tokenUsage: parsedChunk.tokenUsage
+              });
+
+              // Handle completion logic based on platform
+              if (parsedChunk.isComplete) {
+                if (platform === 'openai' || platform === 'openrouter') {
+                  completionDetected = true;
+                } else {
+                  // For other platforms, break immediately on completion
+                  break;
+                }
+              }
+              
+              // For OpenAI/OpenRouter, limit chunks processed after completion to prevent infinite loops
+              if (completionDetected) {
+                chunksAfterCompletion++;
+                if (chunksAfterCompletion >= maxChunksAfterCompletion) {
+                  break;
+                }
+              }
             }
           }
         }
@@ -643,6 +803,24 @@ export async function generateSummaryStreaming(
       reader.releaseLock();
     }
 
+
+    
+    // Fallback token estimation for OpenAI if no usage data received
+    if (!tokenUsage && platform === 'openai') {
+      try {
+        // Rough estimation: ~4 characters per token (OpenAI's rough estimate)
+        const inputText = systemPrompt + finalUserPrompt;
+        const estimatedInputTokens = Math.ceil(inputText.length / 4);
+        const estimatedOutputTokens = Math.ceil(fullSummary.length / 4);
+        
+        tokenUsage = {
+          inputTokens: estimatedInputTokens,
+          outputTokens: estimatedOutputTokens
+        };
+      } catch (error) {
+        // Estimation failed, tokenUsage remains undefined
+      }
+    }
     return { summary: fullSummary, tokenUsage };
   } catch (error) {
     console.error("Error during streaming summarization:", error);

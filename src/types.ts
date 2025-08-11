@@ -155,6 +155,9 @@ export interface OpenAIRequest {
   messages: OpenAIMessage[];
   temperature?: number;
   stream?: boolean;
+  stream_options?: {
+    include_usage: boolean;
+  };
 }
 export interface OpenAIResponse {
   choices: { message: { content: string } }[];
@@ -162,6 +165,16 @@ export interface OpenAIResponse {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
+    prompt_tokens_details?: {
+      cached_tokens: number;
+      audio_tokens: number;
+    };
+    completion_tokens_details?: {
+      reasoning_tokens: number;
+      audio_tokens: number;
+      accepted_prediction_tokens: number;
+      rejected_prediction_tokens: number;
+    };
   };
 }
 
