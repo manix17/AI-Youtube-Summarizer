@@ -225,6 +225,31 @@ function handleApiError(
   errorData: ApiErrorResponse,
   status: number
 ): string {
+  // Handle 500 errors with user-friendly messages
+  if (status >= 500 && status < 600) {
+    const platformNames = {
+      openai: "OpenAI",
+      openrouter: "OpenRouter", 
+      anthropic: "Anthropic Claude",
+      gemini: "Google Gemini"
+    };
+    
+    const platformName = platformNames[platform] || platform;
+    
+    // Try to extract specific error message from the response
+    let specificError = "";
+    try {
+      if (errorData.error?.message) {
+        specificError = ` (${errorData.error.message})`;
+      }
+    } catch (e) {
+      // Ignore parsing errors for specific message
+    }
+    
+    return `${platformName} server error (${status}): The AI service is temporarily unavailable. This usually resolves within a few minutes. Please try again later.${specificError}`;
+  }
+  
+  // Handle other error codes with existing logic
   let message = `API Error (${status}): `;
   try {
     switch (platform) {
