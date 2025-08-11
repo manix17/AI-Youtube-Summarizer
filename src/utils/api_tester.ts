@@ -1,4 +1,4 @@
-import type { TestResult, Model, ApiErrorResponse } from "../types";
+import type { TestResult, Model, ModelPricing, ApiErrorResponse } from "../types";
 import platformConfigs from "../assets/platform_configs.json";
 
 export async function testOpenRouterApiKey(apiKey: string): Promise<TestResult> {
@@ -9,13 +9,36 @@ export async function testOpenRouterApiKey(apiKey: string): Promise<TestResult> 
     const response = await fetch("https://openrouter.ai/api/v1/models", {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
-    const data: ApiErrorResponse & { data: { id: string, name: string }[] } =
-      await response.json();
+    const data: ApiErrorResponse & { 
+      data: { 
+        id: string, 
+        name: string,
+        pricing?: {
+          prompt: string,
+          completion: string
+        }
+      }[] 
+    } = await response.json();
     if (response.ok) {
-      const models: Model[] = data.data.map((model) => ({
-        name: model.id,
-        displayName: model.name,
-      }));
+      const models: Model[] = data.data.map((model) => {
+        let pricing: ModelPricing | undefined;
+        if (model.pricing) {
+          const inputPrice = parseFloat(model.pricing.prompt);
+          const outputPrice = parseFloat(model.pricing.completion);
+          if (!isNaN(inputPrice) && !isNaN(outputPrice)) {
+            pricing = {
+              input: inputPrice * 1000000, // Convert to per 1M tokens
+              output: outputPrice * 1000000, // Convert to per 1M tokens
+              unit: "USD per 1M tokens"
+            };
+          }
+        }
+        return {
+          name: model.id,
+          displayName: model.name,
+          pricing
+        };
+      });
       return { success: true, models: models };
     } else {
       return {

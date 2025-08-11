@@ -1033,37 +1033,42 @@
       }
 
       .model-option:hover {
-        background: #f8fafc;
-        border-left-color: #4f46e5;
+        background: #f7fafc;
+        transform: translateX(4px);
       }
 
       .model-option.selected {
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
-        border-left-color: #7c3aed;
+        border-color: #4f46e5;
       }
 
-      .model-option.selected:hover {
-        background: linear-gradient(135deg, #3730a3, #6b21a8);
+      .model-option .model-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 2px;
       }
 
-      .model-name {
-        font-weight: 500;
-        color: #2d3748;
-      }
-
-      .model-option.selected .model-name {
-        color: white;
-      }
-
-      .model-value {
-        font-size: 0.85rem;
-        color: #6b7280;
+      .model-option .model-value {
+        font-size: 0.8rem;
+        opacity: 0.7;
         font-family: "Monaco", "Menlo", monospace;
       }
 
-      .model-option.selected .model-value {
-        color: rgba(255, 255, 255, 0.8);
+      .model-option .model-pricing {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        margin-top: 4px;
+        padding: 2px 6px;
+        background: rgba(79, 70, 229, 0.1);
+        border-radius: 4px;
+        color: #4f46e5;
+        font-weight: 500;
+      }
+
+      .model-option.selected .model-pricing {
+        background: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.9);
       }
 
       .no-models-message {

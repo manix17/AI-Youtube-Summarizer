@@ -3,10 +3,33 @@
     "name": "🧠 OpenAI",
     "className": "openai",
     "models": [
-      { "value": "gpt-5", "label": "GPT-5", "temperature": 1 },
-      { "value": "gpt-5-mini", "label": "GPT-5 Mini", "temperature": 1 },
-      { "value": "gpt-5-nano", "label": "GPT-5 Nano", "temperature": 1 },
-      { "value": "gpt-3.5-turbo", "label": "GPT-3.5 Turbo" }
+      {
+        "value": "gpt-5",
+        "label": "GPT-5",
+        "temperature": 1,
+        "pricing": {
+          "input": 1.25,
+          "output": 10.0,
+          "unit": "USD per 1M tokens"
+        }
+      },
+      {
+        "value": "gpt-5-mini",
+        "label": "GPT-5 Mini",
+        "temperature": 1,
+        "pricing": { "input": 0.25, "output": 2.0, "unit": "USD per 1M tokens" }
+      },
+      {
+        "value": "gpt-5-nano",
+        "label": "GPT-5 Nano",
+        "temperature": 1,
+        "pricing": { "input": 0.05, "output": 0.4, "unit": "USD per 1M tokens" }
+      },
+      {
+        "value": "gpt-3.5-turbo",
+        "label": "GPT-3.5 Turbo",
+        "pricing": { "input": 0.5, "output": 1.5, "unit": "USD per 1M tokens" }
+      }
     ]
   },
   "anthropic": {
@@ -16,31 +39,54 @@
       {
         "value": "claude-4-opus",
         "label": "Claude Opus 4.1",
-        "apiName": "claude-opus-4-1-20250805"
+        "apiName": "claude-opus-4-1-20250805",
+        "pricing": {
+          "input": 15.0,
+          "output": 75.0,
+          "unit": "USD per 1M tokens"
+        }
       },
       {
         "value": "claude-4-sonnet",
         "label": "Claude Sonnet 4",
-        "apiName": "claude-sonnet-4-20250514"
+        "apiName": "claude-sonnet-4-20250514",
+        "pricing": { "input": 3.0, "output": 15.0, "unit": "USD per 1M tokens" }
       },
       {
         "value": "claude-3.7-sonnet",
         "label": "Claude 3.7 Sonnet",
-        "apiName": "claude-3-7-sonnet-20250219"
+        "apiName": "claude-3-7-sonnet-20250219",
+        "pricing": { "input": 3.0, "output": 15.0, "unit": "USD per 1M tokens" }
       },
       {
         "value": "claude-3.5-haiku",
         "label": "Claude 3.5 Haiku",
-        "apiName": "claude-3-5-haiku-20241022"
+        "apiName": "claude-3-5-haiku-20241022",
+        "pricing": {
+          "input": 0.8,
+          "output": 4,
+          "unit": "USD per 1M tokens"
+        }
+      },
+      {
+        "value": "claude-3-haiku",
+        "label": "Claude 3 Haiku",
+        "apiName": "claude-3-haiku-20240307",
+        "pricing": {
+          "input": 0.25,
+          "output": 1.25,
+          "unit": "USD per 1M tokens"
+        }
       }
     ]
   },
   "openrouter": {
     "name": "🚀 OpenRouter",
     "className": "openrouter",
+    "pricingNote": "Pricing is dynamic. See OpenRouter's model page for details.",
+    "pricingUrl": "https://openrouter.ai/models",
     "models": [
       { "value": "openrouter/auto", "label": "Auto (best available)" },
-
       { "value": "openai/gpt-5", "label": "OpenAI: GPT-5" },
       { "value": "openai/gpt-5-mini", "label": "OpenAI: GPT-5 Mini" },
       { "value": "openai/gpt-4.1-mini", "label": "OpenAI: GPT-4.1 Mini" },
@@ -48,45 +94,44 @@
         "value": "openai/gpt-3.5-turbo",
         "label": "OpenAI: GPT-3.5 Turbo (Legacy)"
       },
-
       {
-        "value": "anthropic/claude-4-opus",
+        "value": "anthropic/claude-opus-4.1",
         "label": "Anthropic: Claude Opus 4.1"
       },
       {
-        "value": "anthropic/claude-4-sonnet",
+        "value": "anthropic/claude-sonnet-4",
         "label": "Anthropic: Claude Sonnet 4"
       },
       {
         "value": "anthropic/claude-3.5-haiku",
         "label": "Anthropic: Claude 3.5 Haiku"
       },
-
-      {
-        "value": "google/gemini-2.5-pro",
-        "label": "Google: Gemini 2.5 Pro"
-      },
+      { "value": "google/gemini-2.5-pro", "label": "Google: Gemini 2.5 Pro" },
       {
         "value": "google/gemini-flash-1.5",
         "label": "Google: Gemini 1.5 Flash"
       },
-
       {
-        "value": "mistralai/mistral-large-2",
+        "value": "mistralai/mistral-large-2411",
         "label": "Mistral: Mistral Large 2"
       },
-      { "value": "deepseek/deepseek-v2", "label": "Deepseek: Deepseek V2" }
+      { "value": "deepseek/deepseek-r1-0528:free", "label": "Deepseek R1 (Free)" },
+      { "value": "deepseek/deepseek-r1-0528", "label": "Deepseek R1" }
     ]
   },
   "gemini": {
     "name": "🔮 Google Gemini",
     "className": "gemini",
     "models": [
-      { "value": "models/gemini-2.5-flash", "label": "Gemini 2.5 Flash" },
-      { "value": "models/gemini-2.5-pro", "label": "Gemini 2.5 Pro" },
       {
-        "value": "models/gemini-2.5-flash-lite",
-        "label": "Gemini 2.5 Flash-Lite"
+        "value": "models/gemini-2.5-pro",
+        "label": "Gemini 2.5 Pro",
+        "pricing": { "input": 2.5, "output": 15.0, "unit": "USD per 1M tokens" }
+      },
+      {
+        "value": "models/gemini-2.5-flash",
+        "label": "Gemini 2.5 Flash",
+        "pricing": { "input": 1.0, "output": 2.5, "unit": "USD per 1M tokens" }
       }
     ]
   }

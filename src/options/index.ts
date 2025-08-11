@@ -4,6 +4,7 @@ import type {
   Platform,
   PlatformConfigs,
   Model,
+  ModelPricing,
   AppStorage,
   TestApiKeyRequest,
   TestResult,
@@ -308,7 +309,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   // Global variables for model search
-  let availableModels: { recommended: Map<string, string>, other: Map<string, string> } = { recommended: new Map(), other: new Map() };
+  let availableModels: { 
+    recommended: Map<string, { label: string; pricing?: ModelPricing }>, 
+    other: Map<string, { label: string; pricing?: ModelPricing }> 
+  } = { 
+    recommended: new Map(), 
+    other: new Map() 
+  };
   let isDropdownOpen = false;
 
   // Model search functionality
@@ -353,24 +360,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dropdownContent.innerHTML = "";
 
-    const filteredRecommended = new Map<string, string>();
-    const filteredOther = new Map<string, string>();
+    const filteredRecommended = new Map<string, { label: string; pricing?: ModelPricing }>();
+    const filteredOther = new Map<string, { label: string; pricing?: ModelPricing }>();
 
     // Filter models based on search term
     availableModels.recommended.forEach((label, value) => {
       if (searchTerm === "" || 
-          label.toLowerCase().includes(searchTerm) || 
+          label.label.toLowerCase().includes(searchTerm) || 
           value.toLowerCase().includes(searchTerm) ||
-          (searchTerm === "free" && (label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
+          (searchTerm === "free" && (label.label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
         filteredRecommended.set(value, label);
       }
     });
 
     availableModels.other.forEach((label, value) => {
       if (searchTerm === "" || 
-          label.toLowerCase().includes(searchTerm) || 
+          label.label.toLowerCase().includes(searchTerm) || 
           value.toLowerCase().includes(searchTerm) ||
-          (searchTerm === "free" && (label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
+          (searchTerm === "free" && (label.label.toLowerCase().includes("free") || value.toLowerCase().includes("free")))) {
         filteredOther.set(value, label);
       }
     });
@@ -399,11 +406,20 @@ document.addEventListener("DOMContentLoaded", () => {
       filteredRecommended.forEach((label, value) => {
         const option = document.createElement("div");
         option.className = `model-option ${value === currentSelectedModel ? 'selected' : ''}`;
+        
+        let pricingHtml = '';
+        if (label.pricing) {
+          const inputPrice = label.pricing.input.toFixed(2);
+          const outputPrice = label.pricing.output.toFixed(2);
+          pricingHtml = `<div class="model-pricing">💰 In: $${inputPrice} | Out: $${outputPrice} per 1M tokens</div>`;
+        }
+        
         option.innerHTML = `
-          <div class="model-name">${label}</div>
+          <div class="model-name">${label.label}</div>
           <div class="model-value">${value}</div>
+          ${pricingHtml}
         `;
-        option.addEventListener("click", () => selectModel(value, label));
+        option.addEventListener("click", () => selectModel(value, label.label));
         section.appendChild(option);
       });
       
@@ -418,11 +434,20 @@ document.addEventListener("DOMContentLoaded", () => {
       filteredOther.forEach((label, value) => {
         const option = document.createElement("div");
         option.className = `model-option ${value === currentSelectedModel ? 'selected' : ''}`;
+        
+        let pricingHtml = '';
+        if (label.pricing) {
+          const inputPrice = label.pricing.input.toFixed(2);
+          const outputPrice = label.pricing.output.toFixed(2);
+          pricingHtml = `<div class="model-pricing">💰 In: $${inputPrice} | Out: $${outputPrice} per 1M tokens</div>`;
+        }
+        
         option.innerHTML = `
-          <div class="model-name">${label}</div>
+          <div class="model-name">${label.label}</div>
           <div class="model-value">${value}</div>
+          ${pricingHtml}
         `;
-        option.addEventListener("click", () => selectModel(value, label));
+        option.addEventListener("click", () => selectModel(value, label.label));
         section.appendChild(option);
       });
       
@@ -1019,14 +1044,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Populate recommended models from config
     if (config?.models) {
       config.models.forEach((model) =>
-        availableModels.recommended.set(model.value, model.label)
+        availableModels.recommended.set(model.value, { label: model.label, pricing: model.pricing })
       );
     }
 
-    // Populate other models from API response
+    // Populate other models from API response and update recommended models with pricing
     apiModels.forEach((model) => {
-      if (!availableModels.recommended.has(model.name)) {
-        availableModels.other.set(model.name, model.displayName);
+      if (availableModels.recommended.has(model.name)) {
+        // Update recommended model with pricing from API
+        const existingModel = availableModels.recommended.get(model.name);
+        if (existingModel) {
+          availableModels.recommended.set(model.name, {
+            label: existingModel.label,
+            pricing: model.pricing || existingModel.pricing
+          });
+        }
+      } else {
+        // Add to other models
+        availableModels.other.set(model.name, { label: model.displayName, pricing: model.pricing });
       }
     });
 
@@ -1040,8 +1075,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Find the display name for the current model
     let currentModelDisplay = "";
     if (currentModel) {
-      currentModelDisplay = availableModels.recommended.get(currentModel) || 
-                           availableModels.other.get(currentModel) || 
+      currentModelDisplay = availableModels.recommended.get(currentModel)?.label || 
+                           availableModels.other.get(currentModel)?.label || 
                            currentModel;
       modelSearchInput.value = currentModelDisplay;
     } else if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
@@ -1051,7 +1086,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : Array.from(availableModels.other.entries())[0];
       
       selectedModelInput.value = firstModel[0];
-      modelSearchInput.value = firstModel[1];
+      modelSearchInput.value = firstModel[1].label;
       profiles[currentProfileId].models[platform] = firstModel[0];
       saveSettings();
     }

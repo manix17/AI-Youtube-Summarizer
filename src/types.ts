@@ -90,14 +90,23 @@ export interface StoredProfile {
 }
 
 // --- Options Page Specific Types ---
+export interface ModelPricing {
+  input: number;
+  output: number;
+  unit: string;
+}
+
 export interface PlatformConfig {
   name: string;
   className: string;
+  pricingNote?: string;
+  pricingUrl?: string;
   models: {
     value: string;
     label: string;
     temperature?: number;
     apiName?: string;
+    pricing?: ModelPricing;
   }[];
 }
 
@@ -253,6 +262,7 @@ export interface Model {
   name: string;
   displayName: string;
   supportedGenerationMethods?: string[];
+  pricing?: ModelPricing;
 }
 
 export interface TestResult {
