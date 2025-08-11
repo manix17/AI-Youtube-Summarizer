@@ -71,9 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const platformBadge = document.getElementById(
     "platform-badge"
   ) as HTMLSpanElement;
-  const profileList = document.getElementById("profile-list") as HTMLDivElement;
+  const profileSelect = document.getElementById("profile-select") as HTMLSelectElement;
   const addProfileBtn = document.getElementById(
     "add-profile-btn"
+  ) as HTMLButtonElement;
+  const resetProfileBtn = document.getElementById(
+    "reset-profile-btn"
+  ) as HTMLButtonElement;
+  const deleteProfileBtn = document.getElementById(
+    "delete-profile-btn"
   ) as HTMLButtonElement;
   const testKeyBtn = document.getElementById(
     "test-key-btn"
@@ -325,6 +331,12 @@ document.addEventListener("DOMContentLoaded", () => {
     showModelDropdown();
   }
 
+  function enableModelSearch(): void {
+    modelSearchInput.disabled = false;
+    modelSearchInput.placeholder = "Search and select a model...";
+    modelSearchInput.classList.remove('loading');
+  }
+
   function showModelDropdown(): void {
     if (availableModels.recommended.size > 0 || availableModels.other.size > 0) {
       isDropdownOpen = true;
@@ -492,6 +504,18 @@ document.addEventListener("DOMContentLoaded", () => {
     addProfileBtn?.addEventListener("click", () =>
       profileModal?.classList.add("show")
     );
+    profileSelect?.addEventListener("change", (e) => {
+      const selectedProfile = (e.target as HTMLSelectElement).value;
+      switchProfile(selectedProfile);
+    });
+    resetProfileBtn?.addEventListener("click", () => {
+      showResetModal(currentProfileId);
+    });
+    deleteProfileBtn?.addEventListener("click", () => {
+      if (currentProfileId !== 'default') {
+        showDeleteModal(currentProfileId);
+      }
+    });
     closeModalBtn?.addEventListener("click", closeModal);
     cancelProfileBtn?.addEventListener("click", closeModal);
     createProfileBtn?.addEventListener("click", createNewProfile);
@@ -1105,46 +1129,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderProfiles(): void {
-    profileList.innerHTML = "";
+    profileSelect.innerHTML = "";
+    
     Object.keys(profiles).forEach((profileId) => {
       const profile = profiles[profileId];
-      const profileItem = document.createElement("div");
-      profileItem.className = `profile-item ${
-        profileId === currentProfileId ? "active" : ""
-      }`;
-      profileItem.dataset.profile = profileId;
-      profileItem.innerHTML = `<span class="profile-name">${profile.name}</span>`;
-
-      // Add actions for all profiles
-      const actionsContainer = document.createElement("div");
-      actionsContainer.className = "profile-actions";
-
-      const resetBtn = document.createElement("button");
-      resetBtn.className = "reset-profile-btn";
-      resetBtn.textContent = "Reset";
-      resetBtn.onclick = (e) => {
-        e.stopPropagation();
-        showResetModal(profileId);
-      };
-      actionsContainer.appendChild(resetBtn);
-
-      // Add delete button only for non-default profiles
-      if (profileId !== "default") {
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "delete-profile-btn";
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          showDeleteModal(profileId);
-        };
-        actionsContainer.appendChild(deleteBtn);
+      const option = document.createElement("option");
+      option.value = profileId;
+      option.textContent = profile.name;
+      if (profileId === currentProfileId) {
+        option.selected = true;
       }
-
-      profileItem.appendChild(actionsContainer);
-
-      profileItem.onclick = () => switchProfile(profileId);
-      profileList.appendChild(profileItem);
+      profileSelect.appendChild(option);
     });
+    
+    // Update action buttons state
+    updateActionButtonsState();
+  }
+
+  function updateActionButtonsState(): void {
+    const isDefault = currentProfileId === 'default';
+    deleteProfileBtn.disabled = isDefault;
+    resetProfileBtn.disabled = false;
+    
+    // Update tooltips
+    if (isDefault) {
+      deleteProfileBtn.title = 'Cannot delete default profile';
+    } else {
+      deleteProfileBtn.title = 'Delete Profile';
+    }
   }
 
   function switchProfile(profileId: string): void {
