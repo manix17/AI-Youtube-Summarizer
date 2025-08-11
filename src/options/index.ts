@@ -506,7 +506,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Model search functionality
     modelSearchInput?.addEventListener("input", handleModelSearch);
-    modelSearchInput?.addEventListener("focus", showModelDropdown);
+    modelSearchInput?.addEventListener("click", showModelDropdown);
     modelSearchInput?.addEventListener("blur", () => {
       // Delay hiding to allow clicking on options
       setTimeout(() => hideModelDropdown(), 150);
